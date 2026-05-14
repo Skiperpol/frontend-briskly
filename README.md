@@ -123,7 +123,7 @@ Trzeba zdefiniować przejście podróży z fazy edycji do fazy archiwalnej. Kluc
 
 ## 4) Opis projektowanego systemu oraz diagramy procesów (BPMN)
 
-System Briskly składa się z **warstwy API (backend)**, **warstwy prezentacji (frontend SPA)** oraz **warstwy danych** obejmującej import **GTFS**, modele planu użytkownika oraz (docelowo) multimedia przy przystankach. Zamiast osobnych diagramów **UML** (np. diagramów klas na tym etapie), w sprawozdaniu przyjęto **diagramy BPMN** dwóch kluczowych procesów biznesowych — zgodnie z ustaleniami projektowymi zastępują one formalny pakiet UML w zakresie wizualizacji dynamiki systemu.
+System Briskly składa się z **warstwy API (backend)**, **warstwy prezentacji (frontend SPA)** oraz **warstwy danych** obejmującej import **GTFS**, modele planu użytkownika oraz (docelowo) multimedia przy przystankach. Zamiast osobnych diagramów **UML** (np. diagramów klas na tym etapie), w sprawozdaniu przyjęto **diagramy BPMN** dwóch kluczowych procesów biznesowych — zgodnie z ustaleniami projektowymi zastępują one formalny pakiet UML w zakresie wizualizacji dynamiki systemu. **Diagramy sekwencyjne (Mermaid)** w tej samej sekcji ilustrują wybrane scenariusze testowe interfejsu (przepływ między widokami i bazą).
 
 ### Proces 1: Budowa planu wycieczki z odcinków komunikacji
 
@@ -133,56 +133,108 @@ Proces odpowiada **rdzeniowi modułu logistycznego**: użytkownik zbiera **UserT
 
 ![Diagram BPMN — tworzenie tripu w aplikacji](BPMN.png)
 
-```mermaid
-flowchart TB
-  subgraph SYS[System Briskly – warstwa aplikacji]
-    direction TB
-    start1((Start))
-    start1 --> A[Utworzenie lub wybór rekordu UserTrip]
-    A --> B[Wybór przystanku startu / miasta]
-    B --> C[Wyszukanie dostępnych kursów Trip i godzin StopTime]
-    C --> D{Zapisano wybrane połączenie jako UserTripConnection?}
-    D -->|Nie| E[Dostosowanie daty/czasu i strefy dla etapu]
-    E --> C
-    D -->|Tak| F{Kolejny etap planu?}
-    F -->|Tak| B
-    F -->|Nie| G[Uzupełnienie metadanych UserTrip np. nazwa, zakres dat]
-    G --> end1((Koniec))
-  end
-
-  subgraph ZEW[Źródła zewnętrzne – na razie w bazie GTFS]
-    direction TB
-    C -.->|odczyt| GTFS[(Route Trip Stop StopTime Calendar)]
-  end
-```
-
 ### Proces 2: Sugestie destynacji według atrakcyjności i realnych połączeń
 
-Proces łączy **modele atrakcyjności** z **faktyczną dostępnością przejazdów**, aby nie sugerować miejsc „oderwanych” od sieci transportowej.
+Proces łączy modele atrakcyjności z faktyczną dostępnością przejazdów, aby nie sugerować miejsc „oderwanych” od sieci transportowej. W obrocie danych uczestniczą m.in. atrakcje, powiązania **StopAttraction** oraz rozkład **GTFS** (**Trip**, **StopTime**).
+
+**Diagram BPMN (collaboration, User — System):** żądanie sugestii destynacji z uwzględnieniem okna czasowego i dostępnych kursów.
+
+![Diagram BPMN — sugestie destynacji](BPMN-sugestie-destynacji.png)
+
+### Diagramy sekwencyjne (Mermaid) — scenariusze testowe Briskly
+
+Poniższe diagramy modelują interakcje **użytkownika** z głównymi **widokami aplikacji** oraz uproszczoną warstwą **danych** (propozycje połączeń, zapis tripu), zgodnie z opisanymi testami.
+
+#### Test 1 — Dodawanie nowego tripu
+
+**Wstęp:** baza tripów i connections jest pusta; tworzony jest nowy plan podróży.
 
 ```mermaid
-flowchart TB
-  subgraph U[Użytkownik]
-    direction TB
-    s2((Start))
-    s2 --> P1[Podanie kontekstu: start, czas, preferencje]
-    P1 --> P2[Żądanie listy sugestii destynacji]
-  end
+sequenceDiagram
+    autonumber
+    actor U as Użytkownik
+    participant App as Aplikacja
+    participant Exp as Explore
+    participant Map as Mapa
+    participant Sum as Podsumowanie
+    participant Idx as Lista tripów
+    participant DB as Baza
 
-  subgraph B[System Briskly]
-    direction TB
-    Q1[Pobranie przystanków i atrakcji w zasięgu StopAttraction]
-    Q1 --> Q2[Filtrowanie po dostępnych Trip / StopTime dla wybranego okna]
-    Q2 --> Q3{Brama: czy atrakcja ma sens logistycznie?}
-    Q3 -->|Nie| Q4[Pomiń lub obniż ranking]
-    Q3 -->|Tak| Q5[Ranking według importance / odległości / reguł]
-    Q4 --> Q5
-    Q5 --> Q6[Zwrot uporządkowanej listy destynacji]
-    Q6 --> e2((Koniec))
-  end
+    U->>App: Start
+    App->>Exp: Ekran Explore
+    Exp-->>U: Formularz wyjazdu
 
-  P2 --> Q1
+    U->>Exp: Szukanie Wro i wybór daty
+    Exp-->>U: Wrocław jako start
+
+    U->>Exp: Odkryj miejsca
+    Exp->>Map: Mapa z sugestiami
+    Map->>DB: Propozycje dla nowego planu
+    DB-->>Map: Lista miast
+    Map-->>U: Kafelki
+
+    U->>Map: Wybór Gliwic
+    Map-->>U: Szczegóły miasta
+
+    U->>Map: Dodaj do tripu
+    Map->>Sum: Podsumowanie
+    Sum-->>U: Plan z dwoma miastami
+
+    U->>Sum: Zapisz
+    Sum->>DB: Zapis planu
+    DB-->>Sum: OK
+    Sum->>Idx: Lista tripów
+    Idx-->>U: Nowy trip na liście
 ```
+
+#### Test 2 — Dodanie nowego miasta do istniejącego tripu
+
+**Wstęp:** w bazie jest trip „Wrocław and Gliwice”.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as Użytkownik
+    participant App as Aplikacja
+    participant Idx as Lista tripów
+    participant Sum as Podsumowanie
+    participant Map as Mapa
+    participant DB as Baza
+
+    U->>App: Start
+    App->>DB: Odczyt tripów
+    DB-->>App: Jest trip Wrocław i Gliwice
+    App->>Idx: Lista
+    Idx-->>U: Widać zapisany plan
+
+    U->>Idx: Otwarcie tripu
+    Idx->>Sum: Szczegóły
+    Sum->>DB: Dane planu
+    DB-->>Sum: Dwa etapy
+    Sum-->>U: Podsumowanie trasy
+
+    U->>Sum: Więcej destynacji
+    Sum->>Map: Mapa z sugestiami
+    Map->>DB: Propozycje z ostatniego miasta
+    DB-->>Map: Nowe miejsca
+    Map-->>U: Kafelki na mapie
+
+    U->>Map: Inna data i godzina
+    Map->>DB: Świeże propozycje
+    DB-->>Map: Zaktualizowana lista
+    Map-->>U: Nowe kafelki
+
+    U->>Map: Wybór Berlina
+    Map->>Sum: Powrót do podsumowania
+    Sum->>DB: Zapis planu z trzema miastami
+    DB-->>Sum: OK
+    Sum-->>U: Rozszerzony trip
+```
+
+#### Uwagi do notacji (diagramy sekwencji)
+
+- **Router / Aplikacja** grupuje nawigację między widokami zgodnie z krokami testów.
+- **Baza (trips, connections)** reprezentuje trwałość danych: zapis po „Save This Trip”, odczyt przy starcie i przy ładowaniu propozycji — dokładny podział na endpointy zależy od implementacji, ale przepływ logiczny odpowiada efektom opisanym w testach.
 
 ---
 
@@ -238,22 +290,22 @@ Schemat składa się z **warstwy GTFS i planu podróży** oraz **planowanego roz
 
 ```mermaid
 erDiagram
-    City ||--o{ Place
-    Place ||--o{ Stop
-    Route ||--o{ Trip
-    Calendar ||--o{ Trip
-    Calendar ||--o{ CalendarDate
-    Trip ||--o{ StopTime
-    Stop ||--o{ StopTime
-    Stop ||--o{ StopAttraction
-    Attraction ||--o{ StopAttraction
-    UserTrip ||--o{ UserTripConnection
-    Trip ||--o{ UserTripConnection
-    Stop ||--o{ UserTripConnection
-    UserTrip ||--o{ TripStopJournalEntry
-    Stop ||--o{ TripStopJournalEntry
-    UserTripConnection |o--o{ TripStopJournalEntry
-    TripStopJournalEntry ||--o{ TripStopPhoto
+    City ||--o{ Place : "agreguje miejsca"
+    Place ||--o{ Stop : "zawiera przystanki"
+    Route ||--o{ Trip : "realizuje kursy"
+    Calendar ||--o{ Trip : "kursuje wg kalendarza"
+    Calendar ||--o{ CalendarDate : "wyjątki dat"
+    Trip ||--o{ StopTime : "harmonogram na przystankach"
+    Stop ||--o{ StopTime : "odjazdy i przyjazdy"
+    Stop ||--o{ StopAttraction : "atrakcje w pobliżu"
+    Attraction ||--o{ StopAttraction : "powiązanie z przystankiem"
+    UserTrip ||--o{ UserTripConnection : "odcinki planu"
+    Trip ||--o{ UserTripConnection : "opcjonalny kurs GTFS"
+    Stop ||--o{ UserTripConnection : "start lub koniec odcinka"
+    UserTrip ||--o{ TripStopJournalEntry : "wpisy dziennika"
+    Stop ||--o{ TripStopJournalEntry : "kontekst przystanku"
+    UserTripConnection |o--o{ TripStopJournalEntry : "opcjonalny odcinek"
+    TripStopJournalEntry ||--o{ TripStopPhoto : "zdjęcia przy wpisie"
 
     City {
         string city_id PK
@@ -399,106 +451,3 @@ Podział backend / frontend wynika z wymagań projektu:
 - **Praca równoległa:** rozdział warstw pozwala równocześnie rozwijać endpointy API i interfejs na podstawie uzgodnionej dokumentacji.
 - **Skalowalność:** REST ułatwia późniejsze podłączenie aplikacji mobilnej korzystającej z tego samego backendu.
 - **Multimedia:** **Django Storage** i obsługa plików po stronie serwera, w połączeniu z przesyłaniem zdjęć z Reacta, wspierają wygodne tworzenie dziennika podróży.
-
----
-
-## 9) Diagramy sekwencyjne (Mermaid) — scenariusze testowe Briskly
-
-Poniższe diagramy modelują interakcje **użytkownika** z głównymi **widokami aplikacji** oraz uproszczoną warstwą **danych** (propozycje połączeń, zapis tripu), zgodnie z opisanymi testami.
-
----
-
-### Test 1 — Dodawanie nowego tripu
-
-**Wstęp:** baza tripów i connections jest pusta; tworzony jest nowy plan podróży.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as Użytkownik
-    participant App as Aplikacja
-    participant Exp as Explore
-    participant Map as Mapa
-    participant Sum as Podsumowanie
-    participant Idx as Lista tripów
-    participant DB as Baza
-
-    U->>App: Start
-    App->>Exp: Ekran Explore
-    Exp-->>U: Formularz wyjazdu
-
-    U->>Exp: Szukanie Wro i wybór daty
-    Exp-->>U: Wrocław jako start
-
-    U->>Exp: Odkryj miejsca
-    Exp->>Map: Mapa z sugestiami
-    Map->>DB: Propozycje dla nowego planu
-    DB-->>Map: Lista miast
-    Map-->>U: Kafelki
-
-    U->>Map: Wybór Gliwic
-    Map-->>U: Szczegóły miasta
-
-    U->>Map: Dodaj do tripu
-    Map->>Sum: Podsumowanie
-    Sum-->>U: Plan z dwoma miastami
-
-    U->>Sum: Zapisz
-    Sum->>DB: Zapis planu
-    DB-->>Sum: OK
-    Sum->>Idx: Lista tripów
-    Idx-->>U: Nowy trip na liście
-```
-
----
-
-### Test 2 — Dodanie nowego miasta do istniejącego tripu
-
-**Wstęp:** w bazie jest trip „Wrocław and Gliwice”.
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as Użytkownik
-    participant App as Aplikacja
-    participant Idx as Lista tripów
-    participant Sum as Podsumowanie
-    participant Map as Mapa
-    participant DB as Baza
-
-    U->>App: Start
-    App->>DB: Odczyt tripów
-    DB-->>App: Jest trip Wrocław i Gliwice
-    App->>Idx: Lista
-    Idx-->>U: Widać zapisany plan
-
-    U->>Idx: Otwarcie tripu
-    Idx->>Sum: Szczegóły
-    Sum->>DB: Dane planu
-    DB-->>Sum: Dwa etapy
-    Sum-->>U: Podsumowanie trasy
-
-    U->>Sum: Więcej destynacji
-    Sum->>Map: Mapa z sugestiami
-    Map->>DB: Propozycje z ostatniego miasta
-    DB-->>Map: Nowe miejsca
-    Map-->>U: Kafelki na mapie
-
-    U->>Map: Inna data i godzina
-    Map->>DB: Świeże propozycje
-    DB-->>Map: Zaktualizowana lista
-    Map-->>U: Nowe kafelki
-
-    U->>Map: Wybór Berlina
-    Map->>Sum: Powrót do podsumowania
-    Sum->>DB: Zapis planu z trzema miastami
-    DB-->>Sum: OK
-    Sum-->>U: Rozszerzony trip
-```
-
----
-
-### Uwagi do notacji
-
-- **Router / Aplikacja** grupuje nawigację między widokami zgodnie z krokami testów.
-- **Baza (trips, connections)** reprezentuje trwałość danych: zapis po „Save This Trip”, odczyt przy starcie i przy ładowaniu propozycji — dokładny podział na endpointy zależy od implementacji, ale przepływ logiczny odpowiada efektom opisanym w testach.
