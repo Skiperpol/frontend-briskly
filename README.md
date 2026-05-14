@@ -240,19 +240,61 @@ sequenceDiagram
 
 ## 5) Spis ekranów wraz z makietami (mockupy)
 
-| Lp. | Ekran / widok | Krótki opis | Makieta |
-|-----|----------------|-------------|---------|
-| 1 | Logowanie i rejestracja | Formularze uwierzytelnienia użytkownika | *(do wstawienia)* |
-| 2 | Lista wycieczek (dashboard) | Archiwum planów użytkownika, wejście w szczegóły | *(do wstawienia)* |
-| 3 | Wyszukiwarka: miasta i kontekst wyjazdu | Zapytanie o miasto startu, datę, godzinę, strefę, okno oczekiwania | *(do wstawienia)* |
-| 4 | Wyniki sugestii destynacji | Lista destynacji z czasem przejazdu i „pkt atrakcyjności” | *(do wstawienia)* |
-| 5 | Szczegóły wycieczki | Nazwa, daty, miniatura, lista odcinków | *(do wstawienia)* |
-| 6 | Dodawanie / edycja odcinka | Wybór przystanków, czasów, powiązanie z kursami GTFS | *(do wstawienia)* |
-| 7 | Harmonogram / oś czasu | Wizualizacja kolejnych etapów i przesiadek | *(do wstawienia)* |
-| 8 | Dziennik przy przystanku | Opis, notatki, zdjęcia po zatwierdzeniu wycieczki | *(do wstawienia)* |
-| 9 | Mapa wspomnień | Zbiorcza mapa historycznych tras | *(do wstawienia)* |
-| 10 | Publiczny podgląd wycieczki | Widok tylko do odczytu dla linku udostępnionego | *(do wstawienia)* |
-| 11 | Profil / ustawienia | Preferencje podróży, statystyki | *(do wstawienia)* |
+Makiety są zapisane jako **PNG w katalogu [`Figma/`](Figma/)** (eksport z Figmy). Poniżej ten sam spis ekranów co w zakresie funkcjonalnym — przy każdym punkcie wstawiono odpowiedni plik lub zaznaczono lukę w materiałach.
+
+| Lp. | Ekran / widok | Krótki opis | Plik w `Figma/` |
+|-----|----------------|-------------|-----------------|
+| 1 | Logowanie i rejestracja | Formularze uwierzytelnienia użytkownika | `figma-logowanie.png` |
+| 2 | Lista wycieczek (dashboard) | Archiwum planów użytkownika, wejście w szczegóły | `figma-moje-wycieczki.png` |
+| 3 | Wyszukiwarka: miasta i kontekst wyjazdu | Zapytanie o miasto startu, datę, godzinę, strefę, okno oczekiwania | `figma-planuj-podróż.png` |
+| 4 | Wyniki sugestii destynacji | Lista destynacji z czasem przejazdu i „pkt atrakcyjności” | *Ten sam widok co pkt 3 — sugestie na mapie w ramach „Planuj podróż”. Osobny plik: do dodania.* |
+| 5 | Szczegóły wycieczki | Nazwa, daty, miniatura, lista odcinków | `figma-podglad-wycieczki.png` |
+| 6 | Dodawanie / edycja odcinka | Wybór przystanków, czasów, powiązanie z kursami GTFS | *Brak pliku w `Figma/` — do uzupełnienia.* |
+| 7 | Harmonogram / oś czasu | Wizualizacja kolejnych etapów i przesiadek | *Brak pliku w `Figma/` — do uzupełnienia.* |
+| 8 | Dziennik przy przystanku | Opis, notatki, zdjęcia po zatwierdzeniu wycieczki | *Brak pliku w `Figma/` — do uzupełnienia.* |
+| 9 | Mapa wspomnień | Zbiorcza mapa historycznych tras | `figma-mapa-wspomnień.png` |
+| 10 | Publiczny podgląd wycieczki | Widok tylko do odczytu dla linku udostępnionego | *Ten sam układ co podgląd wycieczki (pkt 5); osobna makieta trybu gościa: do rozważenia / osobny eksport.* |
+| 11 | Profil / ustawienia | Preferencje podróży, statystyki | `figma-profil-użytkownika.png` |
+
+### Podgląd makiet (obrazy)
+
+#### 1. Logowanie i rejestracja
+
+![Makieta: logowanie i rejestracja](Figma/figma-logowanie.png)
+
+#### 2. Lista wycieczek (dashboard)
+
+![Makieta: moje wycieczki](Figma/figma-moje-wycieczki.png)
+
+#### 3. Wyszukiwarka i kontekst wyjazdu oraz mapa (planowanie)
+
+W jednym eksporcie widać kontekst wyjazdu i obszar mapy z podpowiedziami — odpowiada też **pkt 4** (sugestie destynacji na mapie), dopóki nie powstanie osobny plik.
+
+![Makieta: planuj podróż — wyszukiwarka i mapa](Figma/figma-planuj-podróż.png)
+
+#### 4. Wyniki sugestii destynacji
+
+Objęte widokiem z **pkt 3** (`figma-planuj-podróż.png`). Osobny eksport pod ten ekran: *do dodania*.
+
+#### 5. Szczegóły / podgląd wycieczki
+
+![Makieta: podgląd wycieczki](Figma/figma-podglad-wycieczki.png)
+
+#### 6–8. Odcinek, harmonogram, dziennik przy przystanku
+
+*Brak dedykowanych plików w `Figma/` — do uzupełnienia w kolejnej iteracji makiet.*
+
+#### 9. Mapa wspomnień
+
+![Makieta: mapa wspomnień](Figma/figma-mapa-wspomnień.png)
+
+#### 10. Publiczny podgląd wycieczki
+
+Zakładamy spójność wizualną z **pkt 5** (`figma-podglad-wycieczki.png`); osobna makieta trybu tylko do odczytu dla linku: *do rozważenia / osobny eksport.*
+
+#### 11. Profil użytkownika
+
+![Makieta: profil użytkownika](Figma/figma-profil-użytkownika.png)
 
 ---
 
