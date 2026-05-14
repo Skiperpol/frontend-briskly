@@ -422,7 +422,6 @@ erDiagram
         string stop_id FK
         int user_trip_connection_id FK
         text user_description
-        text user_note
         datetime created_at
         datetime updated_at
     }
@@ -431,7 +430,6 @@ erDiagram
         int id PK
         int trip_stop_journal_entry_id FK
         string image_url
-        int sort_order
         string caption
         datetime created_at
     }
