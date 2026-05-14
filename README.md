@@ -62,7 +62,7 @@ Trzeba zdefiniować przejście podróży z fazy edycji do fazy archiwalnej. Kluc
 
 **Sugerowanie destynacji** wymaga **źródeł i reguł oceny atrakcyjności** (np. dane zewnętrzne, proste wagi, preferencje użytkownika) oraz **powiązania ich z realnymi połączeniami**.
 
-### Kontekst konkurencyjny (skrót)
+### Kontekst konkurencyjny
 
 - **Logistyka + sens podróży:** typowe wyszukiwarki rozkładów skupiają się na **dojściu z A do B**; Briskly dodaje warstwę **sugerowania destynacji do zwiedzenia** wg **atrakcyjności lokacji** i kontekstu (start, czas).
 - **Spójność logistyczna i narracyjna:** jeden system łączy wyszukiwanie połączeń, **układanie kilku etapów**, sugestie miejsc oraz warstwę wspomnień.
@@ -75,7 +75,7 @@ Trzeba zdefiniować przejście podróży z fazy edycji do fazy archiwalnej. Kluc
 
 ### 1. Zarządzanie kontem i profilem użytkownika
 
-- **Rejestracja i autoryzacja:** tworzenie konta, logowanie, bezpieczna sesja lub token (do ustalenia w kolejnych iteracjach); planowane jest także **logowanie jednokrotne (SSO)** z wykorzystaniem **Google Identity** (konto Google jako dostawca tożsamości).
+- **Rejestracja i autoryzacja:** tworzenie konta, logowanie, bezpieczna sesja lub token. Planowane jest także **logowanie SSO** z wykorzystaniem **Google Identity**.
 - **Personalizacja profilu:** preferencje podróżnicze (np. preferowane tempo przesiadek).
 - **Statystyki podróżnika:** podsumowania w rodzaju liczby zrealizowanych wypraw, odwiedzonych krajów, czy też przebytych odcinków na podstawie danych zapisanych w systemie.
 
@@ -110,12 +110,7 @@ Trzeba zdefiniować przejście podróży z fazy edycji do fazy archiwalnej. Kluc
 
 ## 3) Repozytorium kodu i pipeline CI
 
-**Repozytorium:** prace projektowe prowadzone są w repozytorium **Git** nad lokalnym katalogiem projektu **`backend-django-briskly`**. Adres zdalny repozytorium (np. **GitHub**, **GitLab**, **Azure DevOps**) należy **uzupełnić we własnym sprawozdaniu** po utworzeniu projektu na wybranej platformie. **Mile widziane** jest skonfigurowanie **pełnego środowiska CI/CD** na tej samej platformie (np. GitHub Actions, GitLab CI, Azure Pipelines).
-
-W niniejszym dokumencie przyjęto założenia **pipeline CI** zgodne z pierwszym etapem prac:
-
-- **Hosting kodu:** **GitHub** (do potwierdzenia po publikacji repozytorium).
-- **CI:** **GitHub Actions** uruchamiany przy **push** i **Pull Requeście**.
+**Repozytorium:** prace projektowe będą prowadzone są w repozytorium **Git** na **GitHub**. Planujemy dodać pipeline CI.
 
 ### Główne elementy pipeline CI
 
@@ -211,7 +206,7 @@ flowchart TB
 
 **Co przyjmujemy:** backend i frontend jako **oddzielne warstwy**, komunikujące się przez **udokumentowane API**.
 
-**Dlaczego:** tak można **równolegle** projektować endpointy i interfejs, testować kontrakt API oraz w przyszłości podłączyć **innego klienta** (np. aplikację mobilną) bez przebudowy całej logiki po stronie serwera.
+**Dlaczego:** tak można **równolegle** projektować endpointy i interfejs, testować API oraz w przyszłości podłączyć **innego klienta** (np. aplikację mobilną) bez przebudowy całej logiki po stronie serwera.
 
 ### 2. Warstwa serwera w układzie MTV (Model, Template, View)
 
@@ -233,9 +228,7 @@ flowchart TB
 
 ## 7) Propozycja schematu bazy danych (diagram ER)
 
-Schemat składa się z **warstwy GTFS i planu podróży** (zgodnej z aktualnym projektem Django w aplikacji `routes`) oraz **planowanego rozszerzenia** pod **dokumentację wizyt przy przystankach** (zdjęcia, notatki, opisy) po **zatwierdzeniu wycieczki**.
-
-**Skrypty SQL:** zgodnie z ustaleniami sprawozdania **nie załączamy surowych skryptów `CREATE TABLE`**. Obiekty bazodanowe powstają z definicji **modeli Django (ORM)** oraz **migracji** (`python manage.py makemigrations`, `migrate`), które w środowisku docelowym materializują struktury w **PostgreSQL**. Baza **PostgreSQL** jest uruchamiana w chmurze **Supabase** (zarządzany PostgreSQL jako warstwa danych projektu).
+Schemat składa się z **warstwy GTFS i planu podróży** oraz **planowanego rozszerzenia** pod **dokumentację wizyt przy przystankach** (zdjęcia, notatki, opisy) po **zatwierdzeniu wycieczki**.
 
 ### Diagram związków encji (ER)
 
@@ -365,13 +358,9 @@ erDiagram
 | **TripStopJournalEntry** | **Kontekst „ta wycieczka + ten przystanek”**: **opis** i **notatki** użytkownika. Opcjonalnie **UserTripConnection**. Treści po **zatwierdzeniu** planu. |
 | **TripStopPhoto** | **Zdjęcia** przy wpisie dziennika, kolejność i podpis. |
 
-Encje pośrednie **StopAttraction** oraz indeksy w **StopTime** w kodzie wspierają **wydajne zapytania** po przystanku i kolejności na kursie.
-
 ---
 
-## 8) Pierwsza propozycja stosu technologicznego
-
-Projekt „Briskly” planuje się w tej chwili jako **architektura rozdzielona**: po stronie serwera wzorzec **MTV** (**Django**), po stronie klienta **architektura komponentowa** (**React**), połączone przez **REST API**.
+## 8) Propozycja stosu technologicznego
 
 ### Backend: Django (MTV)
 
@@ -396,7 +385,7 @@ Warstwy łączy **Django REST Framework**. API jest **bezstanowe (stateless)**. 
 
 ### Dane i tożsamość
 
-- **Baza danych:** **PostgreSQL** hostowany w **Supabase** (spójnie z sekcją schematu ER i migracjami Django).
+- **Baza danych:** **PostgreSQL** hostowany w **Supabase**.
 - **Uwierzytelnianie:** obok klasycznego konta w aplikacji przewidziane jest **SSO przez Google Identity** (logowanie kontem Google), zgodnie z zakresem modułu konta w sekcji funkcjonalnej.
 
 ### Uzasadnienie architektury hybrydowej
