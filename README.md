@@ -463,42 +463,40 @@ sequenceDiagram
 sequenceDiagram
     autonumber
     actor U as Użytkownik
-    participant App as Aplikacja / Router
-    participant Idx as Index (lista tripów)
-    participant Sum as Trip-summary
-    participant Map as Map-view
-    participant Sch as Search Bar (mapa)
-    participant DB as Baza trips/connections
+    participant App as Aplikacja
+    participant Idx as Lista tripów
+    participant Sum as Podsumowanie
+    participant Map as Mapa
+    participant DB as Baza
 
-    U->>App: Uruchomienie aplikacji
-    App->>DB: Odczyt zapisanych tripów
-    DB-->>App: Trip „Wrocław and Gliwice”
-    App->>Idx: Start na widoku index
-    Idx-->>U: Kafelek „Wrocław and Gliwice”
+    U->>App: Start
+    App->>DB: Odczyt tripów
+    DB-->>App: Jest trip Wrocław i Gliwice
+    App->>Idx: Lista
+    Idx-->>U: Widać zapisany plan
 
-    U->>Idx: Kliknięcie w kafelek tripu
-    Idx->>Sum: Nawigacja do trip-summary
-    Sum->>DB: Odczyt szczegółów tripu
-    DB-->>Sum: Dwa połączenia (Wrocław–Gliwice)
-    Sum-->>U: Podsumowanie z dwoma etapami
+    U->>Idx: Otwarcie tripu
+    Idx->>Sum: Szczegóły
+    Sum->>DB: Dane planu
+    DB-->>Sum: Dwa etapy
+    Sum-->>U: Podsumowanie trasy
 
-    U->>Sum: Kliknięcie „Discover More Destinations”
-    Sum->>Map: Przejście do map-view
-    Map->>DB: Propozycje z ostatniego miasta Gliwice — data 28.05.2026 ~10:52
-    DB-->>Map: Nowe sugerowane połączenia
-    Map-->>U: Mapa + propozycje dla Gliwic (28.05.2026 10:52)
+    U->>Sum: Więcej destynacji
+    Sum->>Map: Mapa z sugestiami
+    Map->>DB: Propozycje z ostatniego miasta
+    DB-->>Map: Nowe miejsca
+    Map-->>U: Kafelki na mapie
 
-    U->>Sch: Zmiana daty na 30.05.2026 8:00
-    Sch->>Map: Aktualizacja kontekstu czasu
-    Map->>DB: Ponowne pobranie połączeń Gliwice 30.05.2026 8:00
-    DB-->>Map: Zaktualizowane propozycje
-    Map-->>U: Kafelki dla nowej daty/godziny
+    U->>Map: Inna data i godzina
+    Map->>DB: Świeże propozycje
+    DB-->>Map: Zaktualizowana lista
+    Map-->>U: Nowe kafelki
 
-    U->>Map: Wybór kafelka Berlin 17:30
-    Map->>Sum: Powrót / przejście do trip-summary z rozszerzoną trasą
-    Sum->>DB: Zapis rozszerzonego planu 3 miasta + pobyty
-    DB-->>Sum: Zaktualizowany trip
-    Sum-->>U: 3 miasta · pobyt w Gliwicach 2 dni · 1 dzień w Berlinie na końcu · nazwa „Poland and Germany”
+    U->>Map: Wybór Berlina
+    Map->>Sum: Powrót do podsumowania
+    Sum->>DB: Zapis planu z trzema miastami
+    DB-->>Sum: OK
+    Sum-->>U: Rozszerzony trip
 ```
 
 ---
