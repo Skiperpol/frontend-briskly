@@ -164,8 +164,8 @@ sequenceDiagram
     App->>Exp: Ekran Explore
     Exp-->>U: Formularz wyjazdu
 
-    U->>Exp: Szukanie Wro i wybór daty
-    Exp-->>U: Wrocław jako start
+    U->>Exp: Wyszukanie miasta startowego i wybór daty
+    Exp-->>U: Potwierdzenie miasta startowego
 
     U->>Exp: Odkryj miejsca
     Exp->>Map: Mapa z sugestiami
@@ -173,8 +173,8 @@ sequenceDiagram
     DB-->>Map: Lista miast
     Map-->>U: Kafelki
 
-    U->>Map: Wybór Gliwic
-    Map-->>U: Szczegóły miasta
+    U->>Map: Wybór miasta z sugestii
+    Map-->>U: Szczegóły wybranej destynacji
 
     U->>Map: Dodaj do tripu
     Map->>Sum: Podsumowanie
@@ -189,7 +189,7 @@ sequenceDiagram
 
 #### Test 2 — Dodanie nowego miasta do istniejącego tripu
 
-**Wstęp:** w bazie jest trip „Wrocław and Gliwice”.
+**Wstęp:** w bazie jest już trip z dwoma etapami (dwa różne miasta).
 
 ```mermaid
 sequenceDiagram
@@ -203,7 +203,7 @@ sequenceDiagram
 
     U->>App: Start
     App->>DB: Odczyt tripów
-    DB-->>App: Jest trip Wrocław i Gliwice
+    DB-->>App: Istniejący trip (2 miasta)
     App->>Idx: Lista
     Idx-->>U: Widać zapisany plan
 
@@ -224,7 +224,7 @@ sequenceDiagram
     DB-->>Map: Zaktualizowana lista
     Map-->>U: Nowe kafelki
 
-    U->>Map: Wybór Berlina
+    U->>Map: Wybór kolejnego miasta z sugestii
     Map->>Sum: Powrót do podsumowania
     Sum->>DB: Zapis planu z trzema miastami
     DB-->>Sum: OK
@@ -290,22 +290,22 @@ Schemat składa się z **warstwy GTFS i planu podróży** oraz **planowanego roz
 
 ```mermaid
 erDiagram
-    City ||--o{ Place : "agreguje miejsca"
-    Place ||--o{ Stop : "zawiera przystanki"
-    Route ||--o{ Trip : "realizuje kursy"
-    Calendar ||--o{ Trip : "kursuje wg kalendarza"
-    Calendar ||--o{ CalendarDate : "wyjątki dat"
-    Trip ||--o{ StopTime : "harmonogram na przystankach"
-    Stop ||--o{ StopTime : "odjazdy i przyjazdy"
-    Stop ||--o{ StopAttraction : "atrakcje w pobliżu"
-    Attraction ||--o{ StopAttraction : "powiązanie z przystankiem"
-    UserTrip ||--o{ UserTripConnection : "odcinki planu"
-    Trip ||--o{ UserTripConnection : "opcjonalny kurs GTFS"
-    Stop ||--o{ UserTripConnection : "start lub koniec odcinka"
-    UserTrip ||--o{ TripStopJournalEntry : "wpisy dziennika"
-    Stop ||--o{ TripStopJournalEntry : "kontekst przystanku"
-    UserTripConnection |o--o{ TripStopJournalEntry : "opcjonalny odcinek"
-    TripStopJournalEntry ||--o{ TripStopPhoto : "zdjęcia przy wpisie"
+    City ||--o{ Place : "aggregates places"
+    Place ||--o{ Stop : "contains stops"
+    Route ||--o{ Trip : "operates trips"
+    Calendar ||--o{ Trip : "scheduled by calendar"
+    Calendar ||--o{ CalendarDate : "date exceptions"
+    Trip ||--o{ StopTime : "stop timetable"
+    Stop ||--o{ StopTime : "arrivals and departures"
+    Stop ||--o{ StopAttraction : "nearby attractions"
+    Attraction ||--o{ StopAttraction : "linked to stop"
+    UserTrip ||--o{ UserTripConnection : "itinerary segments"
+    Trip ||--o{ UserTripConnection : "optional GTFS trip"
+    Stop ||--o{ UserTripConnection : "segment origin or destination"
+    UserTrip ||--o{ TripStopJournalEntry : "journal entries"
+    Stop ||--o{ TripStopJournalEntry : "stop context"
+    UserTripConnection |o--o{ TripStopJournalEntry : "optional segment"
+    TripStopJournalEntry ||--o{ TripStopPhoto : "photos on entry"
 
     City {
         string city_id PK
