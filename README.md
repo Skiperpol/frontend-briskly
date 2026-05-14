@@ -431,7 +431,7 @@ sequenceDiagram
     participant Det as Szczegóły miasta
     participant Sum as Trip-summary
     participant Idx as Index (lista tripów)
-    participant DB as Baza (trips, connections)
+    participant DB as Baza trips/connections
 
     U->>App: Uruchomienie aplikacji
     App->>Exp: Nawigacja do Explore
@@ -441,12 +441,12 @@ sequenceDiagram
     Geo-->>U: Propozycja: Wrocław (pierwsza)
 
     U->>Exp: Wybór daty 28.05.2026 8:00
-    Exp-->>U: "Etykiety: Wrocław, Lower Silesia, Poland; Thu May 28, 2026; 08:00:00"
+    Exp-->>U: Etykiety Wrocław · Lower Silesia · Poland — Thu 28 May 2026 08:00:00
 
     U->>Exp: Kliknięcie Discover Locations
     Exp->>Map: Przejście na map-view
     Map->>DB: Pobranie propozycji połączeń (pusta baza / nowy plan)
-    DB-->>Map: "Sugestie (np. Jelenia Góra, Gliwice, Karpacz)"
+    DB-->>Map: Sugestie np. Jelenia Góra / Gliwice / Karpacz
     Map-->>U: Skeletony + kafelki propozycji
 
     U->>Map: Kliknięcie kafelka Gliwice
@@ -455,7 +455,7 @@ sequenceDiagram
 
     U->>Det: Add to Trip 08:55 (1h 57min)
     Det->>Sum: Nawigacja do trip-summary
-    Sum-->>U: Wrocław + Gliwice; nazwa: „Wrocław i Gliwice”; czas podróży 1h 57min; zwiedzanie 0 min
+    Sum-->>U: Wrocław + Gliwice · nazwa „Wrocław i Gliwice” · czas podróży 1h 57min · zwiedzanie 0 min
 
     U->>Sum: Save This Trip
     Sum->>DB: Zapis nowego tripu i połączeń
@@ -479,7 +479,7 @@ sequenceDiagram
     participant Sum as Trip-summary
     participant Map as Map-view
     participant Sch as Search Bar (mapa)
-    participant DB as Baza (trips, connections)
+    participant DB as Baza trips/connections
 
     U->>App: Uruchomienie aplikacji
     App->>DB: Odczyt zapisanych tripów
@@ -495,21 +495,21 @@ sequenceDiagram
 
     U->>Sum: Kliknięcie „Discover More Destinations”
     Sum->>Map: Przejście do map-view
-    Map->>DB: "Propozycje z ostatniego miasta (Gliwice), data 28.05.2026 ~10:52"
+    Map->>DB: Propozycje z ostatniego miasta Gliwice — data 28.05.2026 ~10:52
     DB-->>Map: Nowe sugerowane połączenia
     Map-->>U: Mapa + propozycje dla Gliwic (28.05.2026 10:52)
 
     U->>Sch: Zmiana daty na 30.05.2026 8:00
     Sch->>Map: Aktualizacja kontekstu czasu
-    Map->>DB: "Ponowne pobranie połączeń (Gliwice, 30.05.2026 8:00)"
+    Map->>DB: Ponowne pobranie połączeń Gliwice 30.05.2026 8:00
     DB-->>Map: Zaktualizowane propozycje
     Map-->>U: Kafelki dla nowej daty/godziny
 
     U->>Map: Wybór kafelka Berlin 17:30
     Map->>Sum: Powrót / przejście do trip-summary z rozszerzoną trasą
-    Sum->>DB: "Zapis rozszerzonego planu (3 miasta, pobyty)"
+    Sum->>DB: Zapis rozszerzonego planu 3 miasta + pobyty
     DB-->>Sum: Zaktualizowany trip
-    Sum-->>U: 3 miasta; pobyt w Gliwicach 2 dni; 1 dzień w Berlinie na końcu; nazwa „Poland and Germany”
+    Sum-->>U: 3 miasta · pobyt w Gliwicach 2 dni · 1 dzień w Berlinie na końcu · nazwa „Poland and Germany”
 ```
 
 ---
