@@ -129,6 +129,10 @@ System Briskly składa się z **warstwy API (backend)**, **warstwy prezentacji (
 
 Proces odpowiada **rdzeniowi modułu logistycznego**: użytkownik zbiera **UserTripConnection** w ramach **UserTrip**, korzystając z danych **GTFS** (Trip, StopTime, Stop) oraz powiązań czasu i stref.
 
+**Diagram BPMN (collaboration, User — System):** interakcja przy pierwszym utworzeniu tripu w aplikacji — od uruchomienia po zapis planu.
+
+![Diagram BPMN — tworzenie tripu w aplikacji](BPMN.png)
+
 ```mermaid
 flowchart TB
   subgraph SYS[System Briskly – warstwa aplikacji]
@@ -234,23 +238,22 @@ Schemat składa się z **warstwy GTFS i planu podróży** oraz **planowanego roz
 
 ```mermaid
 erDiagram
-    City ||--o{ Place : "city place"
-    Place ||--o{ Stop : "stop place"
-    Route ||--o{ Trip : "trip route"
-    Calendar ||--o{ Trip : "trip service"
-    Calendar ||--o{ CalendarDate : "wyjatki kalendarza"
-    Trip ||--o{ StopTime : "times"
-    Stop ||--o{ StopTime : "times"
-    Stop ||--o{ StopAttraction : "link"
-    Attraction ||--o{ StopAttraction : "link"
-    UserTrip ||--o{ UserTripConnection : "connections"
-    Trip ||--o{ UserTripConnection : "gtfs_trip opcjonalnie"
-    Stop ||--o{ UserTripConnection : "starting_stop"
-    Stop ||--o{ UserTripConnection : "destination_stop"
-    UserTrip ||--o{ TripStopJournalEntry : "wpisy przy przystankach"
-    Stop ||--o{ TripStopJournalEntry : "przystanek"
-    UserTripConnection |o--o{ TripStopJournalEntry : "opcjonalnie odcinek"
-    TripStopJournalEntry ||--o{ TripStopPhoto : "zdjecia do wpisu"
+    City ||--o{ Place
+    Place ||--o{ Stop
+    Route ||--o{ Trip
+    Calendar ||--o{ Trip
+    Calendar ||--o{ CalendarDate
+    Trip ||--o{ StopTime
+    Stop ||--o{ StopTime
+    Stop ||--o{ StopAttraction
+    Attraction ||--o{ StopAttraction
+    UserTrip ||--o{ UserTripConnection
+    Trip ||--o{ UserTripConnection
+    Stop ||--o{ UserTripConnection
+    UserTrip ||--o{ TripStopJournalEntry
+    Stop ||--o{ TripStopJournalEntry
+    UserTripConnection |o--o{ TripStopJournalEntry
+    TripStopJournalEntry ||--o{ TripStopPhoto
 
     City {
         string city_id PK
@@ -413,44 +416,38 @@ Poniższe diagramy modelują interakcje **użytkownika** z głównymi **widokami
 sequenceDiagram
     autonumber
     actor U as Użytkownik
-    participant App as Aplikacja / Router
+    participant App as Aplikacja
     participant Exp as Explore
-    participant Geo as Wyszukiwanie miast
-    participant Map as Map-view
-    participant Det as Szczegóły miasta
-    participant Sum as Trip-summary
-    participant Idx as Index (lista tripów)
-    participant DB as Baza trips/connections
+    participant Map as Mapa
+    participant Sum as Podsumowanie
+    participant Idx as Lista tripów
+    participant DB as Baza
 
-    U->>App: Uruchomienie aplikacji
-    App->>Exp: Nawigacja do Explore
-    Exp-->>U: Widok z filmem w tle + formularz
+    U->>App: Start
+    App->>Exp: Ekran Explore
+    Exp-->>U: Formularz wyjazdu
 
-    U->>Geo: Wpisanie „Wro” w Search cities
-    Geo-->>U: Propozycja: Wrocław (pierwsza)
+    U->>Exp: Szukanie Wro i wybór daty
+    Exp-->>U: Wrocław jako start
 
-    U->>Exp: Wybór daty 28.05.2026 8:00
-    Exp-->>U: Etykiety Wrocław · Lower Silesia · Poland — Thu 28 May 2026 08:00:00
+    U->>Exp: Odkryj miejsca
+    Exp->>Map: Mapa z sugestiami
+    Map->>DB: Propozycje dla nowego planu
+    DB-->>Map: Lista miast
+    Map-->>U: Kafelki
 
-    U->>Exp: Kliknięcie Discover Locations
-    Exp->>Map: Przejście na map-view
-    Map->>DB: Pobranie propozycji połączeń (pusta baza / nowy plan)
-    DB-->>Map: Sugestie np. Jelenia Góra / Gliwice / Karpacz
-    Map-->>U: Skeletony + kafelki propozycji
+    U->>Map: Wybór Gliwic
+    Map-->>U: Szczegóły miasta
 
-    U->>Map: Kliknięcie kafelka Gliwice
-    Map->>Det: Otwarcie ekranu szczegółów
-    Det-->>U: Opis miasta Gliwice
+    U->>Map: Dodaj do tripu
+    Map->>Sum: Podsumowanie
+    Sum-->>U: Plan z dwoma miastami
 
-    U->>Det: Add to Trip 08:55 (1h 57min)
-    Det->>Sum: Nawigacja do trip-summary
-    Sum-->>U: Wrocław + Gliwice · nazwa „Wrocław i Gliwice” · czas podróży 1h 57min · zwiedzanie 0 min
-
-    U->>Sum: Save This Trip
-    Sum->>DB: Zapis nowego tripu i połączeń
-    DB-->>Sum: Potwierdzenie
-    Sum->>Idx: Przejście do index
-    Idx-->>U: Lista z tripem „Wrocław and Gliwice”
+    U->>Sum: Zapisz
+    Sum->>DB: Zapis planu
+    DB-->>Sum: OK
+    Sum->>Idx: Lista tripów
+    Idx-->>U: Nowy trip na liście
 ```
 
 ---
