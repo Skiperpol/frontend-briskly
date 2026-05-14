@@ -7,6 +7,19 @@
 
 ---
 
+## Spis treści
+
+- [1) Słowny opis wybranego tematu oraz charakterystyka problemów do rozwiązania](#1-słowny-opis-wybranego-tematu-oraz-charakterystyka-problemów-do-rozwiązania)
+- [2) Zakres funkcjonalny systemu](#2-zakres-funkcjonalny-systemu)
+- [3) Repozytorium kodu i pipeline CI](#3-repozytorium-kodu-i-pipeline-ci)
+- [4) Opis projektowanego systemu oraz diagramy procesów (BPMN)](#4-opis-projektowanego-systemu-oraz-diagramy-procesów-bpmn)
+- [5) Spis ekranów wraz z makietami (mockupy)](#5-spis-ekranów-wraz-z-makietami-mockupy)
+- [6) Wybór i opis architektury aplikacji wraz z uzasadnieniem (MVC, MVVM itd.)](#6-wybór-i-opis-architektury-aplikacji-wraz-z-uzasadnieniem-mvc-mvvm-itd)
+- [7) Propozycja schematu bazy danych (diagram ER)](#7-propozycja-schematu-bazy-danych-diagram-er)
+- [8) Propozycja stosu technologicznego](#8-propozycja-stosu-technologicznego)
+
+---
+
 ## 1) Słowny opis wybranego tematu oraz charakterystyka problemów do rozwiązania
 
 ### Charakterystyka ogólna
@@ -85,7 +98,7 @@ Trzeba zdefiniować przejście podróży z fazy edycji do fazy archiwalnej. Kluc
 - **Wyszukiwanie miast** z podpowiedziami i ograniczeniem liczby wyników.
 - **Wyszukiwanie bezpośrednich połączeń** z wybranego miasta dla wskazanej daty i godziny, z uwzględnieniem strefy czasowej i maksymalnego czasu oczekiwania.
 - **Tworzenie i przegląd listy wycieczek** użytkownika, **podgląd szczegółów** pojedynczej wycieczki, **usuwanie** wycieczki.
-- **Uzupełnianie metadanych wycieczki** po zebraniu odcinków (m.in. nazwa, zakres dat, miniatura wyliczana z odwiedzanych miejsc).
+- **Uzupełnianie metadanych wycieczki** po zebraniu odcinków (m.in. nazwa, **zakres dat wyliczany z odcinków**, miniatura wyliczana z odwiedzanych miejsc).
 - **Lista odcinków** przypisanych do wycieczki, **dodawanie odcinka**, **podgląd i usunięcie** pojedynczego odcinka.
 
 ### 3. Moduł dokumentacji i dziennika podróży
@@ -247,7 +260,7 @@ Makiety to **PNG w katalogu [`Figma/`](Figma/)** (eksport z Figmy). W zestawieni
 | 1 | Logowanie i rejestracja | Formularze uwierzytelnienia użytkownika | `Figma/figma-logowanie.png` |
 | 2 | Lista wycieczek (dashboard) | Archiwum planów użytkownika, wejście w szczegóły | `Figma/figma-moje-wycieczki.png` |
 | 3 | Planowanie podróży | Wyszukiwarka, kontekst wyjazdu, mapa z sugestiami destynacji | `Figma/figma-planuj-podróż.png` |
-| 4 | Szczegóły wycieczki | Nazwa, daty, miniatura, lista odcinków | `Figma/figma-podglad-wycieczki.png` |
+| 4 | Szczegóły wycieczki | Nazwa, agregowany zakres dat, miniatura, lista odcinków | `Figma/figma-podglad-wycieczki.png` |
 | 5 | Mapa wspomnień | Zbiorcza mapa historycznych tras | `Figma/figma-mapa-wspomnień.png` |
 | 6 | Profil / ustawienia | Preferencje podróży, statystyki | `Figma/figma-profil-użytkownika.png` |
 
@@ -309,6 +322,8 @@ Makiety to **PNG w katalogu [`Figma/`](Figma/)** (eksport z Figmy). W zestawieni
 
 Schemat składa się z **warstwy GTFS i planu podróży** oraz **planowanego rozszerzenia** pod **dokumentację wizyt przy przystankach** (zdjęcia, notatki, opisy) po **zatwierdzeniu wycieczki**.
 
+Projekt relacyjny jest dopasowany do **trzeciej postaci normalnej (3NF)**: atrybuty niekluczowe zależą wyłącznie od klucza w danej encji, nie ma przechowywanych danych pochodnych od innych atrybutów niekluczowych w tej samej tabeli, a powiązania M:N i „odcinek między dwoma przystankami” są modelowane przez **tabele asocjacyjne** lub **dwie role** (dwa klucze obce do tej samej encji **Stop**). Strefa czasowa odcinka wynika z **Place → City** (przystanek → miasto), a nie jest duplikowana na `UserTripConnection`. **Zakres dat wycieczki** nie jest trzymany na `UserTrip` — można go wyliczyć w zapytaniu z `MIN`/`MAX` po datach odcinków (ew. materializowany widok lub pole cache poza modelem logicznym 3NF, jeśli kiedyś okaże się potrzebne pod wydajność).
+
 ### Diagram związków encji (ER)
 
 ```mermaid
@@ -324,7 +339,8 @@ erDiagram
     Attraction ||--o{ StopAttraction : "linked to stop"
     UserTrip ||--o{ UserTripConnection : "itinerary segments"
     Trip ||--o{ UserTripConnection : "optional GTFS trip"
-    Stop ||--o{ UserTripConnection : "segment origin or destination"
+    Stop ||--o{ UserTripConnection : "departure stop"
+    Stop ||--o{ UserTripConnection : "arrival stop"
     UserTrip ||--o{ TripStopJournalEntry : "journal entries"
     Stop ||--o{ TripStopJournalEntry : "stop context"
     UserTripConnection |o--o{ TripStopJournalEntry : "optional segment"
@@ -334,12 +350,13 @@ erDiagram
         string city_id PK
         string city_name
         float city_lat
-        float city_long
+        float city_lon
         string city_timezone
     }
 
     Place {
         string place_id PK
+        string city_id FK
         string place_name
         float place_importance
         string place_type
@@ -347,10 +364,10 @@ erDiagram
 
     Stop {
         string stop_id PK
+        string place_id FK
         string stop_name
         float stop_lat
         float stop_lon
-        string stop_timezone
     }
 
     Route {
@@ -366,10 +383,14 @@ erDiagram
 
     Trip {
         string trip_id PK
+        string route_id FK
+        string service_id FK
     }
 
     StopTime {
         int stop_time_id PK
+        string trip_id FK
+        string stop_id FK
         string arrival_time
         string departure_time
         int stop_sequence
@@ -383,25 +404,30 @@ erDiagram
     }
 
     CalendarDate {
-        date date
+        string service_id PK
+        date calendar_date PK
         int exception_type
     }
 
     StopAttraction {
+        string stop_id PK
+        string attraction_id PK
         int distance_meters
     }
 
     UserTrip {
+        int id PK
         string slug UK
         string name
-        date start_date
-        date end_date
         datetime finalized_at
     }
 
     UserTripConnection {
         int id PK
-        string timezone
+        int user_trip_id FK
+        string departure_stop_id FK
+        string arrival_stop_id FK
+        string trip_id FK
         date departure_date
         time departure_time
         int duration_total
@@ -409,6 +435,9 @@ erDiagram
 
     TripStopJournalEntry {
         int id PK
+        int user_trip_id FK
+        string stop_id FK
+        int user_trip_connection_id FK
         text user_description
         text user_note
         datetime created_at
@@ -417,6 +446,7 @@ erDiagram
 
     TripStopPhoto {
         int id PK
+        int trip_stop_journal_entry_id FK
         string image_url
         int sort_order
         string caption
@@ -428,13 +458,13 @@ erDiagram
 
 | Tabela | Rola |
 |--------|------|
-| **City**, **Place**, **Stop** | Słownik geografii i przystanków; **Stop** jest punktem styku z rozkładem GTFS i z **UserTripConnection**. |
-| **Route**, **Calendar**, **CalendarDate**, **Trip**, **StopTime** | Import i model **GTFS**: linie, **kalendarz kursowania** i **wyjątki** (**CalendarDate**), kursy (**Trip**) oraz **godziny przyjazdów/odjazdów** na przystankach (**StopTime**). |
-| **Attraction**, **StopAttraction** | **Atrakcyjność destynacji** i powiązanie atrakcji z przystankami (np. odległość), pod proces sugestii. |
-| **UserTrip** | **Plan wycieczki użytkownika** (nazwa, daty, **slug**). Rozszerzenie koncepcyjne: znacznik **zatwierdzenia** (np. **`finalized_at`**), po którym sensowne jest **trwałe** dopisywanie treści przy przystankach i **tryb archiwalny** z dokumentu. |
-| **UserTripConnection** | **Pojedynczy odcinek** planu: start/koniec (**Stop**), czasy, czasy trwania, opcjonalne powiązanie z **Trip** GTFS. |
-| **TripStopJournalEntry** | **Kontekst „ta wycieczka + ten przystanek”**: **opis** i **notatki** użytkownika. Opcjonalnie **UserTripConnection**. Treści po **zatwierdzeniu** planu. |
-| **TripStopPhoto** | **Zdjęcia** przy wpisie dziennika, kolejność i podpis. |
+| **City**, **Place**, **Stop** | Słownik geografii: **City** (strefa czasowa w jednym miejscu), **Place** w mieście, **Stop** w miejscu — **Stop** styka się z GTFS i z **UserTripConnection** (odjazd / przyjazd). |
+| **Route**, **Calendar**, **CalendarDate**, **Trip**, **StopTime** | Import **GTFS**: linia (**Route**), kalendarz i **wyjątki dat** z kluczem złożonym (**service_id**, **calendar_date**), kurs (**Trip** z **route_id** i **service_id**), **StopTime** z powiązaniem do **Trip** i **Stop**. |
+| **Attraction**, **StopAttraction** | Atrakcje i powiązanie M:N z przystankiem przez tabelę **StopAttraction** (klucz złożony **stop_id**, **attraction_id** + odległość). |
+| **UserTrip** | Plan wycieczki: **id** (PK), **slug** (UK), **nazwa**, **finalized_at**. Daty skrajne: agregacja z `UserTripConnection`. |
+| **UserTripConnection** | Odcinek: **dwa różne** klucze do **Stop** (przystanek odjazdu i przyjazdu), czas odjazdu, czas trwania, opcjonalnie **Trip** GTFS. |
+| **TripStopJournalEntry** | Kontekst wycieczka + przystanek: klucze obce do **UserTrip**, **Stop**, opcjonalnie **UserTripConnection**; opis i notatki po zatwierdzeniu planu. |
+| **TripStopPhoto** | Zdjęcia przy wpisie dziennika (**trip_stop_journal_entry_id**), kolejność i podpis. |
 
 ---
 
