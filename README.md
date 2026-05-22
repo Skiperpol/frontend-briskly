@@ -144,7 +144,7 @@ Proces odpowiada **rdzeniowi modułu logistycznego**: użytkownik zbiera **UserT
 
 **Diagram BPMN:** interakcja przy pierwszym utworzeniu tripu w aplikacji, od uruchomienia po zapis planu.
 
-![Diagram BPMN — tworzenie tripu w aplikacji](BPMN.png)
+![Diagram BPMN — tworzenie tripu w aplikacji](assets/BPMN.png)
 
 
 #### Proces 2: Pierwsze złożenie wycieczki i zapis planu
@@ -238,42 +238,42 @@ sequenceDiagram
 
 ## 5) Spis ekranów wraz z makietami (mockupy)
 
-Makiety to **PNG w katalogu [`Figma/`](Figma/)** (eksport z Figmy). W zestawieniu są wyłącznie ekrany, dla których istnieje plik w repozytorium.
+Makiety to **PNG w katalogu [`assets/figma/`](assets/figma/)** (eksport z Figmy). W zestawieniu są wyłącznie ekrany, dla których istnieje plik w repozytorium.
 
 | Lp. | Ekran / widok | Krótki opis | Plik |
 |-----|----------------|-------------|------|
-| 1 | Logowanie i rejestracja | Formularze uwierzytelnienia użytkownika | `Figma/figma-logowanie.png` |
-| 2 | Lista wycieczek (dashboard) | Archiwum planów użytkownika, wejście w szczegóły | `Figma/figma-moje-wycieczki.png` |
-| 3 | Planowanie podróży | Wyszukiwarka, kontekst wyjazdu, mapa z sugestiami destynacji | `Figma/figma-planuj-podróż.png` |
-| 4 | Szczegóły wycieczki | Nazwa, agregowany zakres dat, miniatura, lista odcinków | `Figma/figma-podglad-wycieczki.png` |
-| 5 | Mapa wspomnień | Zbiorcza mapa historycznych tras | `Figma/figma-mapa-wspomnień.png` |
-| 6 | Profil / ustawienia | Preferencje podróży, statystyki | `Figma/figma-profil-użytkownika.png` |
+| 1 | Logowanie i rejestracja | Formularze uwierzytelnienia użytkownika | `assets/figma/figma-logowanie.png` |
+| 2 | Lista wycieczek (dashboard) | Archiwum planów użytkownika, wejście w szczegóły | `assets/figma/figma-moje-wycieczki.png` |
+| 3 | Planowanie podróży | Wyszukiwarka, kontekst wyjazdu, mapa z sugestiami destynacji | `assets/figma/figma-planuj-podróż.png` |
+| 4 | Szczegóły wycieczki | Nazwa, agregowany zakres dat, miniatura, lista odcinków | `assets/figma/figma-podglad-wycieczki.png` |
+| 5 | Mapa wspomnień | Zbiorcza mapa historycznych tras | `assets/figma/figma-mapa-wspomnień.png` |
+| 6 | Profil / ustawienia | Preferencje podróży, statystyki | `assets/figma/figma-profil-użytkownika.png` |
 
 ### Podgląd makiet
 
 #### 1. Logowanie i rejestracja
 
-![Makieta: logowanie i rejestracja](Figma/figma-logowanie.png)
+![Makieta: logowanie i rejestracja](assets/figma/figma-logowanie.png)
 
 #### 2. Lista wycieczek (dashboard)
 
-![Makieta: moje wycieczki](Figma/figma-moje-wycieczki.png)
+![Makieta: moje wycieczki](assets/figma/figma-moje-wycieczki.png)
 
 #### 3. Planowanie podróży (wyszukiwarka, mapa, sugestie)
 
-![Makieta: planuj podróż](Figma/figma-planuj-podróż.png)
+![Makieta: planuj podróż](assets/figma/figma-planuj-podróż.png)
 
 #### 4. Szczegóły wycieczki
 
-![Makieta: podgląd wycieczki](Figma/figma-podglad-wycieczki.png)
+![Makieta: podgląd wycieczki](assets/figma/figma-podglad-wycieczki.png)
 
 #### 5. Mapa wspomnień
 
-![Makieta: mapa wspomnień](Figma/figma-mapa-wspomnień.png)
+![Makieta: mapa wspomnień](assets/figma/figma-mapa-wspomnień.png)
 
 #### 6. Profil użytkownika
 
-![Makieta: profil użytkownika](Figma/figma-profil-użytkownika.png)
+![Makieta: profil użytkownika](assets/figma/figma-profil-użytkownika.png)
 
 ---
 
