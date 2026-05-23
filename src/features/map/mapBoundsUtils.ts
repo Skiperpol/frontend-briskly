@@ -5,6 +5,12 @@ import type { LatLngTuple } from "@/domain/models/GeoPosition"
 const MIN_LAT_SPAN = 0.35
 const MIN_LNG_SPAN = 0.35
 
+/** Pełny widok świata: obie Ameryki, Afryka i Eurasia bez „ucięcia” góra/dół. */
+export const WORLD_VIEW_BOUNDS = L.latLngBounds(
+  [-58, -168],
+  [72, 168],
+)
+
 export function expandBounds(bounds: L.LatLngBounds): L.LatLngBounds {
   const center = bounds.getCenter()
   const latSpan = Math.max(bounds.getNorth() - bounds.getSouth(), MIN_LAT_SPAN)
@@ -80,6 +86,19 @@ export function getTightFitZoom(
   // Priorytet: wypełnienie wysokości (brak szarych pasów góra/dół).
   // Nie oddalaj ponad zoom wymagany przez szerokość trasy.
   return Math.min(Math.max(zoomForHeight, zoomForWidth), maxZoom)
+}
+
+export function applyWorldView(map: L.Map): number {
+  const padding = L.point(20, 20)
+  const fitZoom = map.getBoundsZoom(WORLD_VIEW_BOUNDS, false, padding)
+  const zoom = Math.min(fitZoom, 3)
+
+  map.setMinZoom(Math.max(zoom - 1, 1))
+  map.setMaxBounds(WORLD_VIEW_BOUNDS)
+  map.options.maxBoundsViscosity = 1
+  map.flyTo(WORLD_VIEW_BOUNDS.getCenter(), zoom, { duration: 0.6 })
+
+  return zoom
 }
 
 export function applyMapViewConstraints(

@@ -27,11 +27,11 @@ export function GlobalMap({ layers, focusPositions, focusKey }: GlobalMapProps) 
       preferCanvas
       zoomControl
       maxZoom={18}
-      worldCopyJump
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        noWrap
       />
       {layers.map((layer) => (
         <TripRouteLayer key={layer.tripId} layer={layer} />

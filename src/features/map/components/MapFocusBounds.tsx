@@ -4,6 +4,7 @@ import { useMap } from "react-leaflet"
 import type { LatLngTuple } from "@/domain/models/GeoPosition"
 import {
   applyMapViewConstraints,
+  applyWorldView,
   clearMapViewConstraints,
   positionsToBounds,
 } from "@/features/map/mapBoundsUtils"
@@ -19,18 +20,24 @@ const HORIZONTAL_PADDING = 16
 
 export function MapFocusBounds({ positions, focusKey, maxZoom = 14 }: MapFocusBoundsProps) {
   const map = useMap()
+  const isWorldView = focusKey === "all"
 
   useEffect(() => {
-    if (positions.length === 0) return
-
     map.invalidateSize()
-
-    const bounds = positionsToBounds(positions)
-    if (!bounds) return
 
     let minZoom = 0
 
     const applyView = () => {
+      if (isWorldView) {
+        minZoom = applyWorldView(map)
+        return
+      }
+
+      if (positions.length === 0) return
+
+      const bounds = positionsToBounds(positions)
+      if (!bounds) return
+
       minZoom = applyMapViewConstraints(map, bounds, {
         verticalPadding: VERTICAL_PADDING,
         horizontalPadding: HORIZONTAL_PADDING,
@@ -51,11 +58,7 @@ export function MapFocusBounds({ positions, focusKey, maxZoom = 14 }: MapFocusBo
 
     const onResize = () => {
       map.invalidateSize()
-      minZoom = applyMapViewConstraints(map, bounds, {
-        verticalPadding: VERTICAL_PADDING,
-        horizontalPadding: HORIZONTAL_PADDING,
-        maxZoom,
-      })
+      applyView()
     }
 
     map.on("resize", onResize)
@@ -66,7 +69,7 @@ export function MapFocusBounds({ positions, focusKey, maxZoom = 14 }: MapFocusBo
       map.off("resize", onResize)
       clearMapViewConstraints(map)
     }
-  }, [map, positions, focusKey, maxZoom])
+  }, [map, positions, focusKey, maxZoom, isWorldView])
 
   return null
 }
