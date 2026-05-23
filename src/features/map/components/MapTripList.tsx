@@ -8,6 +8,8 @@ type MapTripListProps = {
   trips: UserTrip[]
   selectedTripId: string | null
   onSelectTrip: (tripId: string) => void
+  tripCount: number
+  totalKilometers: string
 }
 
 export function MapTripList({
@@ -15,11 +17,13 @@ export function MapTripList({
   trips,
   selectedTripId,
   onSelectTrip,
+  tripCount,
+  totalKilometers,
 }: MapTripListProps) {
   return (
     <div className="flex h-full min-h-0 flex-col">
       <p className="shrink-0 px-1 text-sm font-semibold">Wycieczki</p>
-      <ScrollArea className="mt-3 min-h-0 flex-1">
+      <ScrollArea className="mt-3 min-h-0 flex-1 pr-1">
         <ul className="space-y-2 pr-3">
           {layers.map((layer) => {
             const trip = trips.find((item) => item.id === layer.tripId)
@@ -65,6 +69,23 @@ export function MapTripList({
           })}
         </ul>
       </ScrollArea>
+
+      <div className="mt-4 shrink-0 border-t border-sidebar-border pt-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Wycieczki
+            </p>
+            <p className="mt-1 text-lg font-bold">{tripCount}</p>
+          </div>
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Łączny dystans
+            </p>
+            <p className="mt-1 text-lg font-bold">{totalKilometers}</p>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

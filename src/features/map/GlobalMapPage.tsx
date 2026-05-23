@@ -8,7 +8,7 @@ import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { useTripData } from "@/shared/hooks/useTripData"
 
 export function GlobalMapPage() {
-  const { tripMapLayers, journalTrips } = useTripData()
+  const { tripMapLayers, journalTrips, stats } = useTripData()
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
 
   const focusPositions = useMemo(() => {
@@ -36,12 +36,14 @@ export function GlobalMapPage() {
             focusKey={focusKey}
           />
         </div>
-        <aside className="flex w-80 shrink-0 flex-col border-l border-border bg-background p-4">
+        <aside className="flex w-80 shrink-0 flex-col border-l border-sidebar-border bg-sidebar p-4">
           <MapTripList
             layers={tripMapLayers}
             trips={journalTrips}
             selectedTripId={selectedTripId}
             onSelectTrip={setSelectedTripId}
+            tripCount={tripMapLayers.length}
+            totalKilometers={stats.totalKilometers}
           />
         </aside>
       </div>

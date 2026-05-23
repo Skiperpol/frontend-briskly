@@ -17,15 +17,16 @@ type GlobalMapProps = {
 }
 
 export function GlobalMap({ layers, focusPositions, focusKey }: GlobalMapProps) {
-  const maxZoom = focusKey === "all" ? 6 : 10
+  const maxZoom = focusKey === "all" ? 5 : 14
 
   return (
     <MapContainer
       center={DEFAULT_CENTER}
       zoom={DEFAULT_ZOOM}
-      className="h-full w-full z-0"
+      className="h-full w-full z-0 bg-[#aad3df]"
       preferCanvas
       zoomControl
+      maxZoom={18}
       worldCopyJump
     >
       <TileLayer
