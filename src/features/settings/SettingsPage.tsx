@@ -1,15 +1,21 @@
+import { useEffect, useState } from "react"
 import type { ReactNode } from "react"
-import { BookOpen, Camera, Compass, Flag, Mail, Rocket, User } from "lucide-react"
-import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar"
+import { BookOpen, Camera, Compass, Flag, Pencil, Rocket } from "lucide-react"
+
+import { AuthError } from "@/domain/services/AuthService"
+import { UserAvatar } from "@/shared/components/UserAvatar"
 import { Badge } from "@/shared/components/ui/badge"
+import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import { Input } from "@/shared/components/ui/input"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { useAuth } from "@/shared/context/AuthContext"
 import { useTripData } from "@/shared/hooks/useTripData"
+import { cn } from "@/shared/lib/utils"
 
 export function SettingsPage() {
-  const { session } = useAuth()
+  const { session, updateDisplayName } = useAuth()
   const { stats, journalTrips } = useTripData()
 
   if (!session) {
@@ -29,26 +35,19 @@ export function SettingsPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center gap-4">
-                <Avatar className="size-16">
-                  <AvatarFallback className="text-lg">{user.initials}</AvatarFallback>
-                </Avatar>
-                <div className="min-w-0">
-                  <p className="text-lg font-semibold">{user.displayName}</p>
+                <UserAvatar
+                  initials={user.initials}
+                  className="size-16"
+                  fallbackClassName="text-lg"
+                />
+                <div className="min-w-0 flex-1">
+                  <EditableDisplayName
+                    value={user.displayName}
+                    onSave={(displayName) => updateDisplayName(displayName)}
+                  />
                   <p className="text-sm text-muted-foreground">{user.email}</p>
                 </div>
               </div>
-              <dl className="grid gap-4 sm:grid-cols-2">
-                <ProfileField
-                  icon={<User className="size-4" />}
-                  label="Imię i nazwisko"
-                  value={user.displayName}
-                />
-                <ProfileField
-                  icon={<Mail className="size-4" />}
-                  label="Adres e-mail"
-                  value={user.email}
-                />
-              </dl>
             </CardContent>
           </Card>
 
@@ -100,24 +99,104 @@ export function SettingsPage() {
   )
 }
 
-function ProfileField({
-  icon,
-  label,
+function EditableDisplayName({
   value,
+  onSave,
 }: {
-  icon: ReactNode
-  label: string
   value: string
+  onSave: (displayName: string) => void
 }) {
-  return (
-    <div className="flex gap-3 rounded-lg border border-border bg-muted/30 px-4 py-3">
-      <div className="mt-0.5 text-muted-foreground">{icon}</div>
-      <div className="min-w-0">
-        <dt className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          {label}
-        </dt>
-        <dd className="mt-0.5 truncate text-sm font-medium">{value}</dd>
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+  const [error, setError] = useState<string | null>(null)
+  const [saved, setSaved] = useState(false)
+
+  useEffect(() => {
+    if (!editing) {
+      setDraft(value)
+    }
+  }, [value, editing])
+
+  const handleSave = () => {
+    setError(null)
+    setSaved(false)
+    const trimmed = draft.trim()
+    if (!trimmed) {
+      setError("Podaj imię i nazwisko.")
+      return
+    }
+    if (trimmed === value) {
+      setEditing(false)
+      return
+    }
+    try {
+      onSave(trimmed)
+      setSaved(true)
+      setEditing(false)
+    } catch (err) {
+      setError(err instanceof AuthError ? err.message : "Nie udało się zapisać zmian.")
+    }
+  }
+
+  const handleCancel = () => {
+    setDraft(value)
+    setError(null)
+    setEditing(false)
+  }
+
+  if (editing) {
+    return (
+      <div className="space-y-2">
+        <Input
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value)
+            setError(null)
+            setSaved(false)
+          }}
+          className="bg-background text-lg font-semibold"
+          autoFocus
+          aria-label="Imię i nazwisko"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") handleSave()
+            if (e.key === "Escape") handleCancel()
+          }}
+        />
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        <div className="flex gap-2">
+          <Button type="button" size="sm" onClick={handleSave} disabled={!draft.trim()}>
+            Zapisz
+          </Button>
+          <Button type="button" size="sm" variant="outline" onClick={handleCancel}>
+            Anuluj
+          </Button>
+        </div>
       </div>
+    )
+  }
+
+  return (
+    <div className="space-y-1">
+      <div className="group flex min-w-0 items-center gap-1">
+        <p className="truncate text-lg font-semibold">{value}</p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className={cn(
+            "size-8 shrink-0 text-muted-foreground",
+            "opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100",
+          )}
+          onClick={() => {
+            setSaved(false)
+            setEditing(true)
+          }}
+          aria-label="Edytuj imię i nazwisko"
+        >
+          <Pencil className="size-4" />
+        </Button>
+      </div>
+      {saved && <p className="text-sm text-muted-foreground">Zapisano zmiany.</p>}
     </div>
   )
 }

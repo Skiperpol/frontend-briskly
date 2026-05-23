@@ -16,6 +16,7 @@ type AuthContextValue = {
   login: (email: string, password: string) => void
   register: (displayName: string, email: string, password: string) => void
   logout: () => void
+  updateDisplayName: (displayName: string) => void
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -58,6 +59,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     notify()
   }, [])
 
+  const updateDisplayName = useCallback((displayName: string) => {
+    AuthService.getInstance().updateDisplayName(displayName)
+    notify()
+  }, [])
+
   const value = useMemo<AuthContextValue>(
     () => ({
       session,
@@ -65,8 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       login,
       register,
       logout,
+      updateDisplayName,
     }),
-    [session, login, register, logout],
+    [session, login, register, logout, updateDisplayName],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

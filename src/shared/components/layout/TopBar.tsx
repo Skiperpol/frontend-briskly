@@ -3,7 +3,7 @@ import { Link } from "react-router-dom"
 import { LogOut, Settings } from "lucide-react"
 
 import { useAuth } from "@/shared/context/AuthContext"
-import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar"
+import { UserAvatar } from "@/shared/components/UserAvatar"
 import { Button } from "@/shared/components/ui/button"
 import {
   Popover,
@@ -57,9 +57,7 @@ export function TopBar({ title, subtitle, action }: TopBarProps) {
                   "data-[state=open]:ring-2 data-[state=open]:ring-ring",
                 )}
               >
-                <Avatar className="size-8">
-                  <AvatarFallback>{session.user.initials}</AvatarFallback>
-                </Avatar>
+                <UserAvatar initials={session.user.initials} className="size-8" />
               </button>
             </PopoverTrigger>
             <PopoverContent

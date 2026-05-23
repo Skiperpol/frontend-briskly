@@ -11,7 +11,7 @@ import {
 } from "lucide-react"
 
 import { useAuth } from "@/shared/context/AuthContext"
-import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar"
+import { UserAvatar } from "@/shared/components/UserAvatar"
 import { Button } from "@/shared/components/ui/button"
 import {
   Popover,
@@ -88,11 +88,11 @@ export function AppSidebar() {
                   "data-[state=open]:bg-sidebar-accent",
                 )}
               >
-                <Avatar className="size-8">
-                  <AvatarFallback className="text-xs">
-                    {session.user.initials}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  initials={session.user.initials}
+                  className="size-8"
+                  fallbackClassName="text-xs"
+                />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-semibold">
                     {session.user.displayName}

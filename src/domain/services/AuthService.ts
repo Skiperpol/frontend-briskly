@@ -12,6 +12,7 @@ type StoredSession = {
   userId: string
   token: string
   expiresAt: string
+  displayName: string
 }
 
 export class AuthError extends Error {
@@ -89,6 +90,28 @@ export class AuthService {
     localStorage.removeItem(STORAGE_KEY)
   }
 
+  updateDisplayName(displayName: string): User {
+    const session = this.getSession()
+    if (!session) {
+      throw new AuthError("Brak aktywnej sesji.")
+    }
+
+    const trimmed = displayName.trim()
+    if (!trimmed) {
+      throw new AuthError("Podaj imię i nazwisko.")
+    }
+
+    const record = this.findCredentialByUserId(session.user.id)
+    if (!record) {
+      throw new AuthError("Nie znaleziono użytkownika.")
+    }
+
+    record.user.displayName = trimmed
+    this.session = new AuthSession(record.user, session.token, session.expiresAt)
+    this.persistSession()
+    return record.user
+  }
+
   private openSession(user: User): AuthSession {
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
     const token = crypto.randomUUID()
@@ -104,6 +127,7 @@ export class AuthService {
       userId: this.session.user.id,
       token: this.session.token,
       expiresAt: this.session.expiresAt.toISOString(),
+      displayName: this.session.user.displayName,
     }
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload))
   }
@@ -119,6 +143,8 @@ export class AuthService {
         this.logout()
         return
       }
+
+      user.displayName = payload.displayName ?? user.displayName
 
       const session = new AuthSession(
         user,
@@ -141,6 +167,15 @@ export class AuthService {
     for (const record of this.credentials.values()) {
       if (record.user.id === userId) {
         return record.user
+      }
+    }
+    return undefined
+  }
+
+  private findCredentialByUserId(userId: string): StoredCredential | undefined {
+    for (const record of this.credentials.values()) {
+      if (record.user.id === userId) {
+        return record
       }
     }
     return undefined
