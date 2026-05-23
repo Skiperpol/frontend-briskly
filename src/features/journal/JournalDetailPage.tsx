@@ -1,27 +1,20 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Link, Navigate, useParams } from "react-router-dom"
-import { ArrowLeft, Camera, Image, MapPin, Mic, Plus } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 
-import type { JournalEntry } from "@/domain/models"
-import type { TripStopPhoto } from "@/domain/models"
 import { TripService } from "@/domain/services"
+import { DraggableNoteTimeline } from "@/features/journal/components/DraggableNoteTimeline"
 import { EditableBlock } from "@/features/journal/components/EditableBlock"
-import { Badge } from "@/shared/components/ui/badge"
+import { NewNoteForm } from "@/features/journal/components/NewNoteForm"
+import { StopSelector } from "@/features/journal/components/StopSelector"
+import { notesForStop, toEditableNote } from "@/features/journal/journalUtils"
+import type { EditableNote } from "@/features/journal/types"
 import { Button } from "@/shared/components/ui/button"
-import { Card, CardContent } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { TopBar } from "@/shared/components/layout/TopBar"
 import { cn } from "@/shared/lib/utils"
-
-type EditableEntry = {
-  id: string
-  title: string
-  time: string
-  body: string
-  photos: TripStopPhoto[]
-}
 
 function formatTripDate(date: Date): string {
   return new Intl.DateTimeFormat("pl-PL", {
@@ -31,14 +24,8 @@ function formatTripDate(date: Date): string {
   }).format(date)
 }
 
-function toEditableEntry(entry: JournalEntry): EditableEntry {
-  return {
-    id: entry.id,
-    title: entry.title,
-    time: entry.time,
-    body: entry.body,
-    photos: entry.photos,
-  }
+function toIsoDay(date: Date): string {
+  return date.toISOString().slice(0, 10)
 }
 
 function fieldInputClassName() {
@@ -51,34 +38,66 @@ export function JournalDetailPage() {
 
   const [tripName, setTripName] = useState("")
   const [description, setDescription] = useState("")
-  const [sidebarLocation, setSidebarLocation] = useState("")
-  const [entries, setEntries] = useState<EditableEntry[]>([])
+  const [notes, setNotes] = useState<EditableNote[]>([])
+  const [selectedStopId, setSelectedStopId] = useState("")
 
   useEffect(() => {
     if (!trip) return
     setTripName(trip.name)
     setDescription(trip.description)
-    setSidebarLocation(trip.location)
-    setEntries(trip.journalEntries.map(toEditableEntry))
+    setNotes(trip.journalEntries.map(toEditableNote))
+    setSelectedStopId(trip.scheduleStops[0]?.id ?? "")
   }, [trip])
+
+  const noteCountByStop = useMemo(() => {
+    const counts: Record<string, number> = {}
+    for (const note of notes) {
+      counts[note.scheduleStopId] = (counts[note.scheduleStopId] ?? 0) + 1
+    }
+    return counts
+  }, [notes])
+
+  const stopNotes = useMemo(
+    () => (selectedStopId ? notesForStop(notes, selectedStopId) : []),
+    [notes, selectedStopId],
+  )
+
+  const selectedStop = trip?.scheduleStops.find((s) => s.id === selectedStopId)
 
   if (!trip) {
     return <Navigate to="/journal" replace />
   }
 
-  const updateEntry = (id: string, next: EditableEntry) => {
-    setEntries((prev) => prev.map((e) => (e.id === id ? next : e)))
+  const defaultNoteDay = toIsoDay(trip.startDate)
+
+  const updateNote = (id: string, next: EditableNote) => {
+    setNotes((prev) => prev.map((n) => (n.id === id ? next : n)))
   }
 
-  const addEntry = (entry: Omit<EditableEntry, "id">) => {
-    setEntries((prev) => [
+  const reorderStopNotes = (reordered: EditableNote[]) => {
+    setNotes((prev) => {
+      const other = prev.filter((n) => n.scheduleStopId !== selectedStopId)
+      return [...other, ...reordered]
+    })
+  }
+
+  const addNote = (partial: Omit<EditableNote, "id" | "sortOrder" | "scheduleStopId">) => {
+    const current = notesForStop(notes, selectedStopId)
+    const nextOrder =
+      current.length > 0 ? Math.max(...current.map((n) => n.sortOrder)) + 1 : 0
+    setNotes((prev) => [
       ...prev,
-      { ...entry, id: `j-new-${Date.now()}` },
+      {
+        ...partial,
+        id: `j-new-${Date.now()}`,
+        scheduleStopId: selectedStopId,
+        sortOrder: nextOrder,
+      },
     ])
   }
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
       <TopBar
         action={
           <Button size="sm" className="gap-2" asChild>
@@ -89,45 +108,81 @@ export function JournalDetailPage() {
           </Button>
         }
       />
-      <ScrollArea className="flex-1">
-        <EditableBlock
-          className="border-b border-border px-6 py-5"
-          editContent={
-            <TripHeaderEdit
-              name={tripName}
-              description={description}
-              onNameChange={setTripName}
-              onDescriptionChange={setDescription}
-            />
-          }
-          onSave={() => undefined}
-          onCancel={() => {
-            setTripName(trip.name)
-            setDescription(trip.description)
-          }}
-        >
-          <div className="pr-28">
-            <h2 className="text-2xl font-bold">{tripName}</h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              {formatTripDate(trip.startDate)}
-            </p>
-          </div>
-        </EditableBlock>
 
-        <div className="grid gap-6 p-6 lg:grid-cols-3">
-          <div className="space-y-6 lg:col-span-2">
-            <JournalTimeline entries={entries} onUpdateEntry={updateEntry} />
-            <NewMemoryCard onAdd={addEntry} />
-          </div>
-          <JournalSidebar
-            heroImage={trip.heroImageUrl}
-            location={sidebarLocation}
-            onLocationChange={setSidebarLocation}
+      <EditableBlock
+        className="shrink-0 border-b border-border px-6 py-5"
+        editContent={
+          <TripHeaderEdit
+            name={tripName}
+            description={description}
+            onNameChange={setTripName}
+            onDescriptionChange={setDescription}
           />
+        }
+        onSave={() => undefined}
+        onCancel={() => {
+          setTripName(trip.name)
+          setDescription(trip.description)
+        }}
+      >
+        <div className="pr-28">
+          <h2 className="text-2xl font-bold">{tripName}</h2>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {formatTripDate(trip.startDate)}
+          </p>
         </div>
-      </ScrollArea>
-    </>
+      </EditableBlock>
+
+      <div className="grid min-h-0 flex-1 gap-6 p-6 lg:grid-cols-3">
+        <aside className="min-h-0 lg:col-span-1">
+          <ScrollArea className="h-full max-h-full">
+            {trip.scheduleStops.length > 0 ? (
+              <StopSelector
+                stops={trip.scheduleStops}
+                selectedStopId={selectedStopId}
+                noteCountByStop={noteCountByStop}
+                onSelect={setSelectedStopId}
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Brak przystanków w harmonogramie tej podróży.
+              </p>
+            )}
+          </ScrollArea>
+        </aside>
+
+        <div className="relative flex min-h-0 flex-col overflow-hidden rounded-lg border border-border lg:col-span-2">
+          <ScrollArea className="min-h-0 flex-1">
+            <div className="space-y-6 p-4 pb-2">
+              {selectedStop && (
+                <div className="rounded-lg border border-border bg-muted/20 px-4 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Wybrany przystanek
+                  </p>
+                  <p className="font-semibold">{selectedStop.title}</p>
+                  <p className="text-sm text-muted-foreground">{selectedStop.subtitle}</p>
+                </div>
+              )}
+
+              <DraggableNoteTimeline
+                notes={stopNotes}
+                onReorder={reorderStopNotes}
+                onUpdate={updateNote}
+              />
+            </div>
+          </ScrollArea>
+
+          {selectedStopId && (
+            <NewNoteForm
+              key={selectedStopId}
+              defaultDay={defaultNoteDay}
+              onAdd={addNote}
+            />
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
 
@@ -161,292 +216,6 @@ function TripHeaderEdit({
           className={cn(fieldInputClassName(), "min-h-[80px] resize-none")}
         />
       </div>
-    </div>
-  )
-}
-
-function JournalTimeline({
-  entries,
-  onUpdateEntry,
-}: {
-  entries: EditableEntry[]
-  onUpdateEntry: (id: string, entry: EditableEntry) => void
-}) {
-  return (
-    <div className="relative space-y-0">
-      <div className="absolute top-2 bottom-2 left-3 w-px bg-border" />
-      {entries.map((entry) => (
-        <JournalEntryCard
-          key={entry.id}
-          entry={entry}
-          onSave={(next) => onUpdateEntry(entry.id, next)}
-        />
-      ))}
-      {entries.length === 0 && (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          Brak wpisów — dodaj pierwsze wspomnienie poniżej.
-        </p>
-      )}
-    </div>
-  )
-}
-
-function JournalEntryCard({
-  entry,
-  onSave,
-}: {
-  entry: EditableEntry
-  onSave: (entry: EditableEntry) => void
-}) {
-  const [draft, setDraft] = useState(entry)
-
-  useEffect(() => {
-    setDraft(entry)
-  }, [entry])
-
-  return (
-    <article className="relative pb-8 pl-10">
-      <div className="absolute left-0 flex size-7 items-center justify-center rounded-full border-2 border-background bg-primary/10 text-primary">
-        <Camera className="size-3.5" />
-      </div>
-      <Card className="py-4">
-        <CardContent className="px-4 py-0">
-          <EditableBlock
-            editContent={
-              <EntryEditForm draft={draft} onChange={setDraft} />
-            }
-            onSave={() => onSave(draft)}
-            onCancel={() => setDraft(entry)}
-          >
-            <div className="space-y-3 pr-24">
-              <div>
-                <p className="text-[10px] text-muted-foreground">{entry.time}</p>
-                <h3 className="font-semibold">{entry.title}</h3>
-              </div>
-              <p className="text-sm text-muted-foreground">{entry.body}</p>
-              {entry.photos.length > 0 && (
-                <div className="grid grid-cols-2 gap-2">
-                  {entry.photos.map((photo) => (
-                    <figure key={photo.id} className="space-y-1">
-                      <img
-                        src={photo.imageUrl}
-                        alt={photo.caption}
-                        className="aspect-square w-full rounded-lg object-cover"
-                      />
-                      {photo.userDescription && (
-                        <figcaption className="text-xs text-muted-foreground">
-                          {photo.userDescription}
-                        </figcaption>
-                      )}
-                    </figure>
-                  ))}
-                </div>
-              )}
-            </div>
-          </EditableBlock>
-        </CardContent>
-      </Card>
-    </article>
-  )
-}
-
-function EntryEditForm({
-  draft,
-  onChange,
-}: {
-  draft: EditableEntry
-  onChange: (entry: EditableEntry) => void
-}) {
-  return (
-    <div className="space-y-3">
-      <div className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1">
-          <Label htmlFor={`time-${draft.id}`}>Godzina</Label>
-          <Input
-            id={`time-${draft.id}`}
-            value={draft.time}
-            onChange={(e) => onChange({ ...draft, time: e.target.value })}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor={`title-${draft.id}`}>Tytuł</Label>
-          <Input
-            id={`title-${draft.id}`}
-            value={draft.title}
-            onChange={(e) => onChange({ ...draft, title: e.target.value })}
-          />
-        </div>
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor={`body-${draft.id}`}>Treść</Label>
-        <textarea
-          id={`body-${draft.id}`}
-          value={draft.body}
-          onChange={(e) => onChange({ ...draft, body: e.target.value })}
-          className={cn(fieldInputClassName(), "min-h-[100px] resize-none")}
-        />
-      </div>
-    </div>
-  )
-}
-
-function NewMemoryCard({ onAdd }: { onAdd: (entry: Omit<EditableEntry, "id">) => void }) {
-  const [title, setTitle] = useState("")
-  const [time, setTime] = useState("")
-  const [body, setBody] = useState("")
-  const [adding, setAdding] = useState(false)
-
-  const reset = () => {
-    setTitle("")
-    setTime("")
-    setBody("")
-    setAdding(false)
-  }
-
-  const handlePublish = () => {
-    if (!body.trim()) return
-    onAdd({
-      title: title.trim() || "Nowe wspomnienie",
-      time: time.trim() || new Date().toLocaleTimeString("pl-PL", {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-      body: body.trim(),
-      photos: [],
-    })
-    reset()
-  }
-
-  if (!adding) {
-    return (
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full border-dashed py-8"
-        onClick={() => setAdding(true)}
-      >
-        <Plus className="size-4" />
-        Dodaj nowe wspomnienie
-      </Button>
-    )
-  }
-
-  return (
-    <Card className="border-dashed">
-      <CardContent className="space-y-3 py-4">
-        <p className="text-sm font-medium">Nowe wspomnienie</p>
-        <div className="grid gap-3 sm:grid-cols-2">
-          <div className="space-y-1">
-            <Label htmlFor="new-time">Godzina</Label>
-            <Input
-              id="new-time"
-              placeholder="np. 14:30"
-              value={time}
-              onChange={(e) => setTime(e.target.value)}
-            />
-          </div>
-          <div className="space-y-1">
-            <Label htmlFor="new-title">Tytuł</Label>
-            <Input
-              id="new-title"
-              placeholder="np. Spacer po plaży"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-          </div>
-        </div>
-        <textarea
-          className={cn(fieldInputClassName(), "min-h-[80px] resize-none")}
-          placeholder="Co odkryłeś dziś?"
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-        />
-        <div className="flex items-center justify-between">
-          <div className="flex gap-2 text-muted-foreground">
-            <Image className="size-4" aria-hidden />
-            <Mic className="size-4" aria-hidden />
-            <MapPin className="size-4" aria-hidden />
-          </div>
-          <div className="flex gap-2">
-            <Button type="button" size="sm" variant="outline" onClick={reset}>
-              Anuluj
-            </Button>
-            <Button type="button" size="sm" onClick={handlePublish}>
-              Opublikuj wpis
-            </Button>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
-
-function JournalSidebar({
-  heroImage,
-  location,
-  onLocationChange,
-}: {
-  heroImage: string
-  location: string
-  onLocationChange: (v: string) => void
-}) {
-  const [draftLocation, setDraftLocation] = useState(location)
-
-  useEffect(() => {
-    setDraftLocation(location)
-  }, [location])
-
-  return (
-    <div className="space-y-4">
-      <EditableBlock
-        editContent={
-          <div className="space-y-1">
-            <Label htmlFor="sidebar-location">Aktualna lokalizacja</Label>
-            <Input
-              id="sidebar-location"
-              value={draftLocation}
-              onChange={(e) => setDraftLocation(e.target.value)}
-            />
-          </div>
-        }
-        onSave={() => onLocationChange(draftLocation)}
-        onCancel={() => setDraftLocation(location)}
-      >
-        <Card className="overflow-hidden py-0">
-          <div className="relative">
-            <img src={heroImage} alt="" className="h-48 w-full object-cover" />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-            <div className="absolute bottom-3 left-3 pr-24 text-white">
-              <p className="text-[10px] uppercase tracking-wider opacity-80">
-                Śledzenie lokalizacji
-              </p>
-              <p className="font-semibold">{location}</p>
-              <Badge className="mt-1 bg-primary/90">Aktualny przystanek</Badge>
-            </div>
-          </div>
-        </Card>
-      </EditableBlock>
-      <EditableBlock
-        editContent={
-          <p className="text-sm text-muted-foreground">
-            Galeria zdjęć — w pełnej wersji aplikacji możesz tu dodawać miniatury.
-          </p>
-        }
-        onSave={() => undefined}
-        onCancel={() => undefined}
-      >
-        <div className="grid grid-cols-3 gap-2 pr-24">
-          {[1, 2, 3].map((i) => (
-            <div
-              key={i}
-              className="aspect-square rounded-lg bg-muted bg-cover bg-center"
-              style={{
-                backgroundImage: `url(https://images.unsplash.com/photo-${1511739001486 + i}-6bfe10ce785f?w=200&q=80)`,
-              }}
-            />
-          ))}
-        </div>
-      </EditableBlock>
     </div>
   )
 }
