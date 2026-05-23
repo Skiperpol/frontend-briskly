@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom"
+import { Link, NavLink } from "react-router-dom"
 import {
   BookOpen,
   CalendarDays,
@@ -113,9 +113,12 @@ export function AppSidebar() {
                 type="button"
                 variant="ghost"
                 className="h-9 w-full justify-start gap-2 px-2.5 text-sm font-normal"
+                asChild
               >
-                <Settings className="size-4" />
-                Ustawienia
+                <Link to="/settings">
+                  <Settings className="size-4" />
+                  Ustawienia
+                </Link>
               </Button>
               <Button
                 type="button"

@@ -6,6 +6,7 @@ import { JournalPage } from "@/features/journal/JournalPage"
 import { GlobalMapPage } from "@/features/map/GlobalMapPage"
 import { PlannerPage } from "@/features/planner/PlannerPage"
 import { SchedulePage } from "@/features/schedule/SchedulePage"
+import { SettingsPage } from "@/features/settings/SettingsPage"
 import { AppShell } from "@/shared/components/layout/AppShell"
 import { ProtectedRoute } from "@/shared/components/layout/ProtectedRoute"
 
@@ -21,6 +22,7 @@ function App() {
             <Route path="schedule" element={<SchedulePage />} />
             <Route path="journal/*" element={<JournalPage />} />
             <Route path="map" element={<GlobalMapPage />} />
+            <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

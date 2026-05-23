@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import { Link } from "react-router-dom"
 import { LogOut, Settings } from "lucide-react"
 
 import { useAuth } from "@/shared/context/AuthContext"
@@ -37,13 +38,13 @@ export function TopBar({ title, subtitle, action }: TopBarProps) {
       </div>
 
       <div className="flex shrink-0 items-center gap-1">
-        <button
-          type="button"
+        <Link
+          to="/settings"
           className="rounded-lg p-2 text-muted-foreground hover:bg-muted"
           aria-label="Ustawienia"
         >
           <Settings className="size-4" />
-        </button>
+        </Link>
         {session && (
           <Popover>
             <PopoverTrigger asChild>
