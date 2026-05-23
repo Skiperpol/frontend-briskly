@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { BookOpen, Calendar, Camera, Compass, Flag, Mail, Rocket, User } from "lucide-react"
+import { BookOpen, Camera, Compass, Flag, Mail, Rocket, User } from "lucide-react"
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar"
 import { Badge } from "@/shared/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
@@ -7,14 +7,6 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { useAuth } from "@/shared/context/AuthContext"
 import { useTripData } from "@/shared/hooks/useTripData"
-
-function formatMemberSince(date: Date): string {
-  return new Intl.DateTimeFormat("pl-PL", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(date)
-}
 
 export function SettingsPage() {
   const { session } = useAuth()
@@ -55,16 +47,6 @@ export function SettingsPage() {
                   icon={<Mail className="size-4" />}
                   label="Adres e-mail"
                   value={user.email}
-                />
-                <ProfileField
-                  icon={<Calendar className="size-4" />}
-                  label="Konto od"
-                  value={formatMemberSince(user.createdAt)}
-                />
-                <ProfileField
-                  icon={<Compass className="size-4" />}
-                  label="Identyfikator"
-                  value={user.id}
                 />
               </dl>
             </CardContent>
