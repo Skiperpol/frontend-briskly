@@ -13,7 +13,7 @@ import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { TopBar } from "@/shared/components/layout/TopBar"
+import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { useTripData } from "@/shared/hooks/useTripData"
 import { cn } from "@/shared/lib/utils"
 
@@ -21,8 +21,7 @@ export function DashboardPage() {
   const { activeTrip, activities, travelLogs, stats } = useTripData()
 
   return (
-    <>
-      <TopBar />
+    <PageLayout>
       <ScrollArea className="flex-1">
         <div className="space-y-6 p-6">
           <Card className="relative overflow-hidden border-0 py-0">
@@ -190,7 +189,7 @@ export function DashboardPage() {
           </div>
         </div>
       </ScrollArea>
-    </>
+    </PageLayout>
   )
 }
 

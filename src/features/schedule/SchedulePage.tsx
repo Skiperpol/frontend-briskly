@@ -10,7 +10,7 @@ import type { ScheduleStop, ScheduleStopKind } from "@/domain/models"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
-import { TopBar } from "@/shared/components/layout/TopBar"
+import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { useTripData } from "@/shared/hooks/useTripData"
 import { cn } from "@/shared/lib/utils"
@@ -37,9 +37,7 @@ export function SchedulePage() {
   const { activeTrip } = useTripData()
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <TopBar title={activeTrip.name} />
-
+    <PageLayout title={activeTrip.name}>
       <div className="flex min-h-0 flex-1">
         <ScrollArea className="w-full max-w-xl border-r border-border">
           <div className="p-6">
@@ -57,7 +55,7 @@ export function SchedulePage() {
 
         <MapPanel />
       </div>
-    </div>
+    </PageLayout>
   )
 }
 

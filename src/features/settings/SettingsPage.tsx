@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar"
 import { Badge } from "@/shared/components/ui/badge"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { TopBar } from "@/shared/components/layout/TopBar"
+import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { useAuth } from "@/shared/context/AuthContext"
 import { useTripData } from "@/shared/hooks/useTripData"
 
@@ -28,8 +28,7 @@ export function SettingsPage() {
   const completedTrips = journalTrips.filter((trip) => trip.isFinalized).length
 
   return (
-    <>
-      <TopBar title="Ustawienia" />
+    <PageLayout title="Ustawienia">
       <ScrollArea className="flex-1">
         <div className="mx-auto max-w-3xl space-y-6 p-6">
           <Card>
@@ -115,7 +114,7 @@ export function SettingsPage() {
           </Card>
         </div>
       </ScrollArea>
-    </>
+    </PageLayout>
   )
 }
 

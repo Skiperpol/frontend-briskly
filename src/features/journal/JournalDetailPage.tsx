@@ -13,7 +13,7 @@ import { Button } from "@/shared/components/ui/button"
 import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { TopBar } from "@/shared/components/layout/TopBar"
+import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { cn } from "@/shared/lib/utils"
 
 function formatTripDate(date: Date): string {
@@ -97,18 +97,17 @@ export function JournalDetailPage() {
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
-      <TopBar
-        action={
-          <Button size="sm" className="gap-2" asChild>
-            <Link to="/journal">
-              <ArrowLeft className="size-4" />
-              Wszystkie podróże
-            </Link>
-          </Button>
-        }
-      />
-
+    <PageLayout
+      action={
+        <Button size="sm" className="gap-2" asChild>
+          <Link to="/journal">
+            <ArrowLeft className="size-4" />
+            Wszystkie podróże
+          </Link>
+        </Button>
+      }
+    >
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <EditableBlock
         className="shrink-0 border-b border-border px-6 py-5"
         editContent={
@@ -182,7 +181,8 @@ export function JournalDetailPage() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </PageLayout>
   )
 }
 

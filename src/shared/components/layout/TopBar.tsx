@@ -22,7 +22,7 @@ export function TopBar({ title, subtitle, action }: TopBarProps) {
   const { session, logout } = useAuth()
 
   return (
-    <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border bg-sidebar px-6 py-3">
+    <header className="flex w-full shrink-0 items-center justify-between gap-4 border-b border-border bg-sidebar px-6 py-3">
       <div className="flex min-w-0 flex-1 items-center gap-4">
         {(title || subtitle) && (
           <div className="min-w-0">

@@ -5,7 +5,7 @@ import type { UserTrip } from "@/domain/models"
 import { Badge } from "@/shared/components/ui/badge"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { TopBar } from "@/shared/components/layout/TopBar"
+import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { useTripData } from "@/shared/hooks/useTripData"
 import { cn } from "@/shared/lib/utils"
 
@@ -21,11 +21,10 @@ export function JournalTripListPage() {
   const { journalTrips } = useTripData()
 
   return (
-    <>
-      <TopBar
-        title="Dziennik"
-        subtitle="Wybierz podróż, aby zobaczyć i edytować wspomnienia"
-      />
+    <PageLayout
+      title="Dziennik"
+      subtitle="Wybierz podróż, aby zobaczyć i edytować wspomnienia"
+    >
       <ScrollArea className="flex-1">
         <div className="grid gap-4 p-6 sm:grid-cols-2 xl:grid-cols-3">
           {journalTrips.map((trip) => (
@@ -33,7 +32,7 @@ export function JournalTripListPage() {
           ))}
         </div>
       </ScrollArea>
-    </>
+    </PageLayout>
   )
 }
 

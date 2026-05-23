@@ -5,9 +5,11 @@ import { JournalTripListPage } from "@/features/journal/JournalTripListPage"
 
 export function JournalPage() {
   return (
-    <Routes>
-      <Route index element={<JournalTripListPage />} />
-      <Route path=":tripId" element={<JournalDetailPage />} />
-    </Routes>
+    <div className="flex h-full min-h-0 w-full flex-1 flex-col">
+      <Routes>
+        <Route index element={<JournalTripListPage />} />
+        <Route path=":tripId" element={<JournalDetailPage />} />
+      </Routes>
+    </div>
   )
 }

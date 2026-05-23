@@ -9,7 +9,7 @@ import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { Slider } from "@/shared/components/ui/slider"
-import { TopBar } from "@/shared/components/layout/TopBar"
+import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { useTripData } from "@/shared/hooks/useTripData"
 import { cn } from "@/shared/lib/utils"
 
@@ -24,9 +24,8 @@ export function PlannerPage() {
   const [view, setView] = useState<"grid" | "list">("grid")
 
   return (
-    <>
-      <TopBar />
-      <div className="flex items-center gap-6 border-b border-border px-6 py-2 text-xs font-semibold uppercase tracking-wider">
+    <PageLayout>
+      <div className="flex shrink-0 items-center gap-6 border-b border-border bg-sidebar px-6 py-2 text-xs font-semibold uppercase tracking-wider">
         <span className="text-muted-foreground">Plany</span>
         <span className="border-b-2 border-primary pb-2 text-primary">Kreator</span>
         <span className="text-muted-foreground">Archiwum</span>
@@ -37,7 +36,7 @@ export function PlannerPage() {
           <DestinationPanel destinations={destinations} view={view} onViewChange={setView} />
         </div>
       </ScrollArea>
-    </>
+    </PageLayout>
   )
 }
 

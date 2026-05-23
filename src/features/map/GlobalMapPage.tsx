@@ -3,15 +3,14 @@ import { Minus, Plus } from "lucide-react"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
-import { TopBar } from "@/shared/components/layout/TopBar"
+import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { useTripData } from "@/shared/hooks/useTripData"
 
 export function GlobalMapPage() {
   const { activeTrip, stats } = useTripData()
 
   return (
-    <>
-      <TopBar title="Mapa globalna" />
+    <PageLayout title="Mapa globalna">
       <div className="relative min-h-0 flex-1">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_#1e3a5f_0%,_#0f172a_70%)]" />
         <div className="absolute top-6 left-6">
@@ -50,6 +49,6 @@ export function GlobalMapPage() {
           </CardContent>
         </Card>
       </div>
-    </>
+    </PageLayout>
   )
 }
