@@ -48,15 +48,29 @@ function JournalTripCard({ trip }: { trip: UserTrip }) {
         : `${entryCount} wpisów`
 
   return (
-    <Link to={`/journal/${trip.id}`} className="block h-full">
-      <Card className="flex h-full flex-col overflow-hidden py-0 transition-shadow hover:shadow-md">
+    <Card className="relative flex h-full flex-col overflow-hidden py-0 transition-shadow hover:shadow-md">
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        className="absolute top-3 right-3 z-10 gap-1.5 bg-background/95 shadow-sm backdrop-blur-sm hover:bg-background"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          exportJournalTrip(trip)
+        }}
+      >
+        <Download className="size-3.5" />
+        Eksportuj
+      </Button>
+      <Link to={`/journal/${trip.id}`} className="flex min-h-0 flex-1 flex-col">
         <div
           className="h-36 shrink-0 bg-cover bg-center"
           style={{ backgroundImage: `url(${trip.heroImageUrl})` }}
         />
         <CardContent className="flex flex-1 flex-col p-4">
           <div className="flex min-h-0 flex-1 flex-col gap-2">
-            <div className="flex items-start justify-between gap-2">
+            <div className="flex items-start justify-between gap-2 pr-20">
               <div className="min-w-0 space-y-1">
                 <p className="text-xs text-muted-foreground">{trip.location}</p>
                 <h3 className="font-semibold leading-tight">{trip.name}</h3>
@@ -76,8 +90,8 @@ function JournalTripCard({ trip }: { trip: UserTrip }) {
             </Badge>
           </div>
         </CardContent>
-      </Card>
-    </Link>
+      </Link>
+    </Card>
   )
 }
 

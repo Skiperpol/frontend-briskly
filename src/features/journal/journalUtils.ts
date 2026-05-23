@@ -1,4 +1,4 @@
-import type { JournalEntry } from "@/domain/models"
+import type { JournalEntry, UserTrip } from "@/domain/models"
 
 import type { EditableNote } from "./types"
 
@@ -44,4 +44,52 @@ export function sortNotes(notes: EditableNote[]): EditableNote[] {
 
 export function notesForStop(notes: EditableNote[], stopId: string): EditableNote[] {
   return sortNotes(notes.filter((note) => note.scheduleStopId === stopId))
+}
+
+export function exportJournalTrip(trip: UserTrip): void {
+  const stopById = new Map(trip.scheduleStops.map((stop) => [stop.id, stop]))
+
+  const payload = {
+    id: trip.id,
+    name: trip.name,
+    location: trip.location,
+    description: trip.description,
+    startDate: trip.startDate.toISOString(),
+    finalizedAt: trip.finalizedAt?.toISOString() ?? null,
+    scheduleStops: trip.scheduleStops.map((stop) => ({
+      id: stop.id,
+      title: stop.title,
+      subtitle: stop.subtitle,
+      time: stop.time,
+      kind: stop.kind,
+    })),
+    journalEntries: [...trip.journalEntries]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .map((entry) => ({
+        id: entry.id,
+        scheduleStopId: entry.scheduleStopId,
+        scheduleStopTitle: stopById.get(entry.scheduleStopId)?.title ?? null,
+        day: entry.day,
+        time: entry.time,
+        title: entry.title,
+        body: entry.body,
+        type: entry.type,
+        photos: entry.photos.map((photo) => ({
+          id: photo.id,
+          caption: photo.caption,
+          userDescription: photo.userDescription,
+          imageUrl: photo.imageUrl,
+        })),
+      })),
+  }
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {
+    type: "application/json;charset=utf-8",
+  })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement("a")
+  anchor.href = url
+  anchor.download = `${trip.slug}-dziennik.json`
+  anchor.click()
+  URL.revokeObjectURL(url)
 }
