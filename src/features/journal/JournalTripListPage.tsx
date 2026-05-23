@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom"
-import { BookOpen, ChevronRight } from "lucide-react"
+import { BookOpen, ChevronRight, Download } from "lucide-react"
 
 import type { UserTrip } from "@/domain/models"
+import { exportJournalTrip } from "@/features/journal/journalUtils"
 import { Badge } from "@/shared/components/ui/badge"
+import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { PageLayout } from "@/shared/components/layout/PageLayout"
