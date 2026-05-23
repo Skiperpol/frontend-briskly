@@ -2,7 +2,9 @@ import { useMemo, useState } from "react"
 
 import { toLatLngTuple } from "@/domain/models/GeoPosition"
 import { GlobalMap } from "@/features/map/components/GlobalMap"
+import { MapStyleSwitcher } from "@/features/map/components/MapStyleSwitcher"
 import { MapTripList } from "@/features/map/components/MapTripList"
+import { DEFAULT_MAP_STYLE_ID, type MapStyleId } from "@/features/map/mapStyles"
 import { collectAllPositions } from "@/features/map/tripMapUtils"
 import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { useTripData } from "@/shared/hooks/useTripData"
@@ -10,6 +12,7 @@ import { useTripData } from "@/shared/hooks/useTripData"
 export function GlobalMapPage() {
   const { tripMapLayers, journalTrips, stats } = useTripData()
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
+  const [mapStyleId, setMapStyleId] = useState<MapStyleId>(DEFAULT_MAP_STYLE_ID)
 
   const focusPositions = useMemo(() => {
     if (!selectedTripId) {
@@ -34,7 +37,13 @@ export function GlobalMapPage() {
             layers={tripMapLayers}
             focusPositions={focusPositions}
             focusKey={focusKey}
+            mapStyleId={mapStyleId}
           />
+          <div className="pointer-events-none absolute top-4 right-4 z-[1000]">
+            <div className="pointer-events-auto">
+              <MapStyleSwitcher value={mapStyleId} onChange={setMapStyleId} />
+            </div>
+          </div>
         </div>
         <aside className="flex w-80 shrink-0 flex-col border-l border-sidebar-border bg-sidebar p-4">
           <MapTripList

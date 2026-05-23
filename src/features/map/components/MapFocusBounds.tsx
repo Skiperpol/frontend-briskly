@@ -5,7 +5,6 @@ import type { LatLngTuple } from "@/domain/models/GeoPosition"
 import {
   applyTripView,
   applyWorldView,
-  clearMapViewConstraints,
   positionsToBounds,
 } from "@/features/map/mapBoundsUtils"
 
@@ -39,7 +38,6 @@ export function MapFocusBounds({ positions, focusKey, maxZoom = 14 }: MapFocusBo
 
     return () => {
       map.off("resize", onResize)
-      clearMapViewConstraints(map)
     }
   }, [map, positions, focusKey, maxZoom, isWorldView])
 
