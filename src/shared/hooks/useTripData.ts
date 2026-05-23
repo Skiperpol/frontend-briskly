@@ -7,7 +7,7 @@ export function useTripData() {
     const service = TripService.getInstance()
     return {
       activeTrip: service.getActiveTrip(),
-      journalTrip: service.getJournalTrip(),
+      journalTrips: service.getJournalTrips(),
       destinations: service.getDestinations(),
       activities: service.getActivities(),
       travelLogs: service.getTravelLogs(),

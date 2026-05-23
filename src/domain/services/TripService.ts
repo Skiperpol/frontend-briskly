@@ -33,19 +33,19 @@ const IMG = {
 export class TripService {
   private static instance: TripService | null = null
 
-  private readonly activeTrip: UserTrip
+  private readonly trips: UserTrip[]
   private readonly destinations: Destination[]
   private readonly activities: ActivityItem[]
   private readonly travelLogs: TravelLog[]
   private readonly stats: DashboardStats
 
   private constructor() {
-    const photos = [
+    const amalfiPhotos = [
       new TripStopPhoto("p1", IMG.coast, "Pierwszy widok na zatokę Salerno.", "Port"),
       new TripStopPhoto("p2", IMG.street, "Wąskie uliczki starego miasta.", "Uliczki"),
     ]
 
-    this.activeTrip = new UserTrip(
+    const europeanTrip = new UserTrip(
       "trip-1",
       "european-grand-tour-2024",
       "Wielka trasa po Europie 2024",
@@ -137,24 +137,120 @@ export class TripService {
       ],
       [
         new JournalEntry(
-          "j1",
+          "j-e1",
+          "Kolacja przy wieży Eiffla",
+          "21:30",
+          "Wieczorne światła Paryża i ciepły deser w kawiarni przy Sekwanie — idealne zakończenie dnia.",
+          "meal",
+          [],
+        ),
+        new JournalEntry(
+          "j-e2",
+          "Spacer po Montmartre",
+          "11:00",
+          "Wąskie uliczki, artyści przy Place du Tertre i zapach świeżego pieczywa z boulangerie.",
+          "sight",
+          [],
+        ),
+      ],
+    )
+
+    const amalfiTrip = new UserTrip(
+      "trip-2",
+      "cobalt-horizon",
+      "Kobaltowy horyzont",
+      IMG.coast,
+      "Wybrzeże Amalfitańskie",
+      "Podróż wzdłuż krętych nadmorskich dróg i ukrytych zatoczek południowych Włoch.",
+      [],
+      new Date("2024-05-14"),
+      [],
+      [],
+      [
+        new JournalEntry(
+          "j-a1",
           "Przylot do Salerno",
           "09:45",
           "Rejs promem przebiegł spokojniej niż się spodziewaliśmy. Linia brzegowa z portu zapiera dech w piersiach.",
           "arrival",
-          photos,
+          amalfiPhotos,
         ),
         new JournalEntry(
-          "j2",
+          "j-a2",
           "Lunch w Trattoria d'Alba",
           "13:30",
           "Świeży makaron z owocami morza i lokalne białe wino. Idealna przerwa w drodze do Positano.",
           "meal",
           [],
-          ["JEDZENIE", "KRAJOBRAZ", "MYŚLI"],
+        ),
+        new JournalEntry(
+          "j-a3",
+          "Zachód słońca w Positano",
+          "19:15",
+          "Domy kaskadowo schodzą ku morzu, a światło staje się złote — jeden z tych widoków, których nie zapomnisz.",
+          "sight",
+          [new TripStopPhoto("p3", IMG.sunset, "Zachód nad Zatoką Salerno.", "Zachód")],
         ),
       ],
     )
+
+    const baliTrip = new UserTrip(
+      "trip-3",
+      "tropical-serenity",
+      "Tropikalna cisza",
+      IMG.tropical,
+      "Bali, Indonezja",
+      "Plaże, tarasy ryżowe i spokojne świątynie — powrót do wspomnień z ubiegłego lata.",
+      [],
+      new Date("2023-09-08"),
+      [],
+      [],
+      [
+        new JournalEntry(
+          "j-b1",
+          "Ubud o świcie",
+          "06:30",
+          "Mgła nad tarasami ryżowymi Tegallalang i śpiew ptaków, zanim obudzi się reszta wyspy.",
+          "sight",
+          [],
+        ),
+        new JournalEntry(
+          "j-b2",
+          "Kolacja na plaży Seminyak",
+          "20:00",
+          "Grillowane owoce morza, muzyka na żywo i ciepły wiatr od Oceanu Indyjskiego.",
+          "meal",
+          [],
+        ),
+      ],
+      new Date("2023-10-02"),
+    )
+
+    const tromsoTrip = new UserTrip(
+      "trip-4",
+      "aurora-hunt",
+      "Polowanie na zorzę",
+      IMG.mountains,
+      "Tromsø, Norwegia",
+      "Arktyczna noc, ciepła herbata w termosie i czekanie na zielone światło na niebie.",
+      [],
+      new Date("2024-02-18"),
+      [],
+      [],
+      [
+        new JournalEntry(
+          "j-t1",
+          "Zorza o północy",
+          "23:15",
+          "Po godzinie w mrozie niebo rozbłysło zielonymi smugami — warto było czekać na mrozie.",
+          "sight",
+          [],
+        ),
+      ],
+      new Date("2024-02-25"),
+    )
+
+    this.trips = [europeanTrip, amalfiTrip, baliTrip, tromsoTrip]
 
     this.destinations = [
       new Destination(
@@ -278,23 +374,15 @@ export class TripService {
   }
 
   getActiveTrip(): UserTrip {
-    return this.activeTrip
+    return this.trips[0]
   }
 
-  getJournalTrip(): UserTrip {
-    return new UserTrip(
-      "journal-view",
-      "cobalt-horizon",
-      "Kobaltowy horyzont",
-      IMG.coast,
-      "Wybrzeże Amalfitańskie",
-      "Podróż wzdłuż krętych nadmorskich dróg i ukrytych zatoczek południowych Włoch.",
-      ["#AMALFI", "#WŁOCHY2024"],
-      new Date("2024-05-14"),
-      [],
-      [],
-      this.activeTrip.journalEntries,
-    )
+  getJournalTrips(): UserTrip[] {
+    return [...this.trips]
+  }
+
+  getTripById(id: string): UserTrip | undefined {
+    return this.trips.find((trip) => trip.id === id)
   }
 
   getDestinations(): Destination[] {

@@ -7,11 +7,17 @@ import {
   LayoutDashboard,
   LogOut,
   Plus,
+  Settings,
 } from "lucide-react"
 
 import { useAuth } from "@/shared/context/AuthContext"
 import { Avatar, AvatarFallback } from "@/shared/components/ui/avatar"
 import { Button } from "@/shared/components/ui/button"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/shared/components/ui/popover"
 import { cn } from "@/shared/lib/utils"
 
 const navItems = [
@@ -72,28 +78,57 @@ export function AppSidebar() {
         </Button>
 
         {session && (
-          <div className="flex items-center gap-2 rounded-lg border border-sidebar-border bg-background px-3 py-2.5">
-            <Avatar className="size-8">
-              <AvatarFallback className="text-xs">
-                {session.user.initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-semibold">{session.user.displayName}</p>
-              <p className="truncate text-[10px] text-muted-foreground">
-                {session.user.email}
-              </p>
-            </div>
-          </div>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                type="button"
+                className={cn(
+                  "flex w-full items-center gap-2 rounded-lg border border-sidebar-border bg-background px-3 py-2.5 text-left transition-colors",
+                  "hover:bg-sidebar-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+                  "data-[state=open]:bg-sidebar-accent",
+                )}
+              >
+                <Avatar className="size-8">
+                  <AvatarFallback className="text-xs">
+                    {session.user.initials}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold">
+                    {session.user.displayName}
+                  </p>
+                  <p className="truncate text-[10px] text-muted-foreground">
+                    {session.user.email}
+                  </p>
+                </div>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              side="top"
+              align="start"
+              sideOffset={8}
+              className="w-[calc(var(--radix-popover-trigger-width))] gap-1 p-1.5 shadow-lg"
+            >
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-9 w-full justify-start gap-2 px-2.5 text-sm font-normal"
+              >
+                <Settings className="size-4" />
+                Ustawienia
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                className="h-9 w-full justify-start gap-2 px-2.5 text-sm font-normal text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => logout()}
+              >
+                <LogOut className="size-4" />
+                Wyloguj
+              </Button>
+            </PopoverContent>
+          </Popover>
         )}
-
-        <Button
-          className="w-full gap-2 border border-destructive/50 bg-destructive text-white hover:bg-destructive/90"
-          onClick={() => logout()}
-        >
-          <LogOut className="size-4" />
-          Wyloguj
-        </Button>
       </div>
     </aside>
   )

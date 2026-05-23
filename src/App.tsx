@@ -19,7 +19,7 @@ function App() {
             <Route index element={<DashboardPage />} />
             <Route path="planner" element={<PlannerPage />} />
             <Route path="schedule" element={<SchedulePage />} />
-            <Route path="journal" element={<JournalPage />} />
+            <Route path="journal/*" element={<JournalPage />} />
             <Route path="map" element={<GlobalMapPage />} />
           </Route>
         </Route>
