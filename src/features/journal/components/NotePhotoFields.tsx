@@ -2,8 +2,8 @@ import { ImagePlus, X } from "lucide-react"
 
 import type { EditablePhoto } from "@/features/journal/types"
 import { Button } from "@/shared/components/ui/button"
-import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
+import { cn } from "@/shared/lib/utils"
 
 type NotePhotoFieldsProps = {
   photos: EditablePhoto[]
@@ -60,33 +60,33 @@ export function NotePhotoFields({ photos, onChange }: NotePhotoFieldsProps) {
         </Button>
       </div>
       {photos.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
-          Opcjonalnie dołącz zdjęcia — każdemu możesz dodać krótki opis.
-        </p>
+        <p className="text-xs text-muted-foreground">Brak zdjęć</p>
       ) : (
         <ul className="space-y-3">
           {photos.map((photo) => (
             <li
               key={photo.id}
-              className="flex gap-3 rounded-lg border border-border p-2"
+              className="flex items-stretch gap-3 rounded-lg border border-border p-2"
             >
               <img
                 src={photo.imageUrl}
                 alt=""
                 className="size-16 shrink-0 rounded-md object-cover"
               />
-              <div className="min-w-0 flex-1 space-y-1">
-                <Input
-                  placeholder="Krótki opis zdjęcia…"
-                  value={photo.userDescription}
-                  onChange={(e) => updateDescription(photo.id, e.target.value)}
-                  className="h-8 text-xs"
-                />
-              </div>
+              <textarea
+                placeholder="Krótki opis zdjęcia…"
+                value={photo.userDescription}
+                onChange={(e) => updateDescription(photo.id, e.target.value)}
+                className={cn(
+                  "h-16 w-full min-w-0 flex-1 resize-none rounded-md border border-input bg-transparent px-2.5 py-2 text-xs outline-none",
+                  "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
+                )}
+              />
               <Button
                 type="button"
                 variant="ghost"
                 size="icon-sm"
+                className="shrink-0 self-center"
                 aria-label="Usuń zdjęcie"
                 onClick={() => removePhoto(photo.id)}
               >

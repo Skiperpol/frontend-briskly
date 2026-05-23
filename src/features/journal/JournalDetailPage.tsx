@@ -156,7 +156,7 @@ export function JournalDetailPage() {
           <ScrollArea className="min-h-0 flex-1">
             <div className="space-y-6 p-4 pb-2">
               {selectedStop && (
-                <div className="rounded-lg border border-border bg-muted/20 px-4 py-3">
+                <div className="rounded-lg border border-border bg-background px-4 py-3">
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                     Wybrany przystanek
                   </p>

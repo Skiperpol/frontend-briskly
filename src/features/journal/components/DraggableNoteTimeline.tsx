@@ -1,10 +1,10 @@
-import { useEffect, useState } from "react"
-import { Camera, GripVertical } from "lucide-react"
+import { Fragment, useEffect, useState } from "react"
+import { GripVertical } from "lucide-react"
 
 import { EditableBlock } from "@/features/journal/components/EditableBlock"
 import { NotePhotoFields } from "@/features/journal/components/NotePhotoFields"
 import { TimeInputField } from "@/features/journal/components/TimeInputField"
-import { formatNoteDay } from "@/features/journal/journalUtils"
+import { formatNoteDay, sortNotes } from "@/features/journal/journalUtils"
 import type { EditableNote } from "@/features/journal/types"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { Input } from "@/shared/components/ui/input"
@@ -21,35 +21,91 @@ type DraggableNoteTimelineProps = {
   onUpdate: (id: string, note: EditableNote) => void
 }
 
+function isNoOpInsert(fromIndex: number, insertIndex: number): boolean {
+  return insertIndex === fromIndex || insertIndex === fromIndex + 1
+}
+
+function DropPlaceholder() {
+  return (
+    <div className="relative pb-4 pl-10">
+      <div className="flex h-14 items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/35 bg-muted/60 text-xs text-muted-foreground">
+        Notatka pojawi się tutaj
+      </div>
+    </div>
+  )
+}
+
 export function DraggableNoteTimeline({
   notes,
   onReorder,
   onUpdate,
 }: DraggableNoteTimelineProps) {
   const [dragId, setDragId] = useState<string | null>(null)
+  const [insertIndex, setInsertIndex] = useState<number | null>(null)
+
+  const sortedNotes = sortNotes(notes)
+
+  const clearDragState = () => {
+    setDragId(null)
+    setInsertIndex(null)
+  }
 
   const handleDragStart = (id: string) => setDragId(id)
 
-  const handleDragOver = (event: React.DragEvent) => {
-    event.preventDefault()
+  const updateInsertIndex = (nextIndex: number) => {
+    if (!dragId) return
+    const fromIndex = sortedNotes.findIndex((n) => n.id === dragId)
+    if (fromIndex < 0) return
+    if (isNoOpInsert(fromIndex, nextIndex)) {
+      setInsertIndex(null)
+      return
+    }
+    setInsertIndex(nextIndex)
   }
 
-  const handleDrop = (targetId: string) => {
-    if (!dragId || dragId === targetId) {
-      setDragId(null)
+  const handleNoteDragOver = (event: React.DragEvent, index: number) => {
+    event.preventDefault()
+    if (!dragId) return
+    const rect = event.currentTarget.getBoundingClientRect()
+    const insertBefore = event.clientY < rect.top + rect.height / 2
+    updateInsertIndex(insertBefore ? index : index + 1)
+  }
+
+  const handleListDragOver = (event: React.DragEvent) => {
+    event.preventDefault()
+    if (!dragId) return
+    updateInsertIndex(sortedNotes.length)
+  }
+
+  const handleDrop = () => {
+    if (!dragId || insertIndex === null) {
+      clearDragState()
       return
     }
-    const fromIndex = notes.findIndex((n) => n.id === dragId)
-    const toIndex = notes.findIndex((n) => n.id === targetId)
-    if (fromIndex < 0 || toIndex < 0) {
-      setDragId(null)
+    const ordered = sortNotes(notes)
+    const fromIndex = ordered.findIndex((n) => n.id === dragId)
+    if (fromIndex < 0) {
+      clearDragState()
       return
     }
-    const next = [...notes]
-    const [moved] = next.splice(fromIndex, 1)
-    next.splice(toIndex, 0, moved)
-    onReorder(next.map((note, index) => ({ ...note, sortOrder: index })))
-    setDragId(null)
+
+    let targetIndex = insertIndex
+    if (fromIndex < targetIndex) targetIndex -= 1
+    if (targetIndex === fromIndex) {
+      clearDragState()
+      return
+    }
+
+    const [moved] = ordered.splice(fromIndex, 1)
+    ordered.splice(targetIndex, 0, moved)
+    onReorder(ordered.map((note, index) => ({ ...note, sortOrder: index })))
+    clearDragState()
+  }
+
+  const showPlaceholderAt = (index: number) => {
+    if (!dragId || insertIndex !== index) return false
+    const fromIndex = sortedNotes.findIndex((n) => n.id === dragId)
+    return fromIndex >= 0 && !isNoOpInsert(fromIndex, index)
   }
 
   if (notes.length === 0) {
@@ -61,35 +117,48 @@ export function DraggableNoteTimeline({
   }
 
   return (
-    <div className="relative space-y-0">
+    <div
+      className="relative space-y-0"
+      onDragOver={handleListDragOver}
+      onDrop={(e) => {
+        e.preventDefault()
+        handleDrop()
+      }}
+    >
       <div className="absolute top-2 bottom-2 left-3 w-px bg-border" />
-      {notes.map((note) => (
-        <article
-          key={note.id}
-          draggable
-          onDragStart={() => handleDragStart(note.id)}
-          onDragOver={handleDragOver}
-          onDrop={() => handleDrop(note.id)}
-          onDragEnd={() => setDragId(null)}
-          className={cn(
-            "relative pb-8 pl-10 transition-opacity",
-            dragId === note.id && "opacity-40",
-          )}
-        >
-          <div className="absolute left-0 flex size-7 items-center justify-center rounded-full border-2 border-background bg-primary/10 text-primary">
-            <Camera className="size-3.5" />
-          </div>
-          <button
-            type="button"
-            aria-label="Przeciągnij, aby zmienić kolejność"
-            className="absolute top-3 left-10 z-10 cursor-grab rounded p-1 text-muted-foreground hover:bg-muted active:cursor-grabbing"
-            onMouseDown={(e) => e.stopPropagation()}
+      {sortedNotes.map((note, index) => (
+        <Fragment key={note.id}>
+          {showPlaceholderAt(index) && <DropPlaceholder />}
+          <article
+            draggable
+            onDragStart={() => handleDragStart(note.id)}
+            onDragOver={(e) => {
+              e.stopPropagation()
+              handleNoteDragOver(e, index)
+            }}
+            onDragEnd={clearDragState}
+            className={cn(
+              "relative pb-8 pl-10 transition-opacity",
+              dragId === note.id && "opacity-40",
+            )}
           >
-            <GripVertical className="size-4" />
-          </button>
-          <NoteCard note={note} onSave={(next) => onUpdate(note.id, next)} />
-        </article>
+            <span
+              className="absolute top-3 left-3 z-10 block size-2.5 -translate-x-1/2 rounded-full bg-primary ring-4 ring-background"
+              aria-hidden
+            />
+            <button
+              type="button"
+              aria-label="Przeciągnij, aby zmienić kolejność"
+              className="absolute top-3 left-10 z-10 cursor-grab rounded p-1 text-muted-foreground hover:bg-muted active:cursor-grabbing"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <GripVertical className="size-4" />
+            </button>
+            <NoteCard note={note} onSave={(next) => onUpdate(note.id, next)} />
+          </article>
+        </Fragment>
       ))}
+      {showPlaceholderAt(sortedNotes.length) && <DropPlaceholder />}
     </div>
   )
 }
