@@ -3,7 +3,6 @@ import {
   BedDouble,
   Plane,
   Plus,
-  RefreshCw,
   UtensilsCrossed,
 } from "lucide-react"
 
@@ -11,7 +10,7 @@ import type { ScheduleStop, ScheduleStopKind } from "@/domain/models"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
-import { Input } from "@/shared/components/ui/input"
+import { TopBar } from "@/shared/components/layout/TopBar"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { useTripData } from "@/shared/hooks/useTripData"
 import { cn } from "@/shared/lib/utils"
@@ -39,18 +38,7 @@ export function SchedulePage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
-      <div className="flex shrink-0 items-center gap-4 border-b border-border px-6 py-2">
-        <div className="shrink-0">
-          <h1 className="text-sm font-semibold">{activeTrip.name}</h1>
-          <Badge variant="secondary" className="mt-1 gap-1 text-[10px]">
-            <RefreshCw className="size-3" />
-            Zsynchronizowano z chmurą
-          </Badge>
-        </div>
-        <div className="relative mx-auto w-full max-w-sm flex-1">
-          <Input className="h-9 rounded-full" placeholder="Szukaj w harmonogramie…" />
-        </div>
-      </div>
+      <TopBar title={activeTrip.name} />
 
       <div className="flex min-h-0 flex-1">
         <ScrollArea className="w-full max-w-xl border-r border-border">

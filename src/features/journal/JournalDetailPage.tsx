@@ -106,7 +106,7 @@ export function JournalDetailPage() {
             setDescription(trip.description)
           }}
         >
-          <div className="pr-24">
+          <div className="pr-28">
             <h2 className="text-2xl font-bold">{tripName}</h2>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
             <p className="mt-2 text-sm text-muted-foreground">

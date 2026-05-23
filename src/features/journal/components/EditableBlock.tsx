@@ -54,7 +54,7 @@ export function EditableBlock({
         type="button"
         variant="outline"
         size="sm"
-        className="absolute top-0 right-0 gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+        className="absolute top-4 right-4 gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
         onClick={() => setEditing(true)}
       >
         <Pencil className="size-3.5" />
