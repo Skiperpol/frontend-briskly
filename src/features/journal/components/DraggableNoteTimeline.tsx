@@ -113,7 +113,7 @@ export function DraggableNoteTimeline({
   if (notes.length === 0) {
     return (
       <p className="py-8 text-center text-sm text-muted-foreground">
-        Brak notatek na tym przystanku — dodaj pierwszą poniżej.
+        Brak notatek na tym przystanku, dodaj pierwszą poniżej.
       </p>
     )
   }
