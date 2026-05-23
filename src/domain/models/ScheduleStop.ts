@@ -1,3 +1,5 @@
+import type { GeoPosition } from "./GeoPosition"
+
 export type ScheduleStopKind = "flight" | "hotel" | "journal" | "dining" | "train" | "bus"
 
 export class ScheduleStop {
@@ -10,6 +12,7 @@ export class ScheduleStop {
   readonly imageUrl?: string
   readonly journalSnippet?: string
   readonly tags: string[]
+  readonly position?: GeoPosition
 
   constructor(
     id: string,
@@ -21,6 +24,7 @@ export class ScheduleStop {
     imageUrl?: string,
     journalSnippet?: string,
     tags: string[] = [],
+    position?: GeoPosition,
   ) {
     this.id = id
     this.kind = kind
@@ -31,5 +35,6 @@ export class ScheduleStop {
     this.imageUrl = imageUrl
     this.journalSnippet = journalSnippet
     this.tags = tags
+    this.position = position
   }
 }

@@ -1,3 +1,4 @@
+import type { GeoPosition } from "./GeoPosition"
 import type { JournalEntry } from "./JournalEntry"
 import type { RouteLeg } from "./RouteLeg"
 import type { ScheduleStop } from "./ScheduleStop"
@@ -14,6 +15,7 @@ export class UserTrip {
   readonly legs: RouteLeg[]
   readonly scheduleStops: ScheduleStop[]
   readonly journalEntries: JournalEntry[]
+  readonly mapPath: GeoPosition[]
   finalizedAt: Date | null
 
   constructor(
@@ -29,6 +31,7 @@ export class UserTrip {
     scheduleStops: ScheduleStop[],
     journalEntries: JournalEntry[],
     finalizedAt: Date | null = null,
+    mapPath: GeoPosition[] = [],
   ) {
     this.id = id
     this.slug = slug
@@ -42,6 +45,7 @@ export class UserTrip {
     this.scheduleStops = scheduleStops
     this.journalEntries = journalEntries
     this.finalizedAt = finalizedAt
+    this.mapPath = mapPath
   }
 
   get isFinalized(): boolean {

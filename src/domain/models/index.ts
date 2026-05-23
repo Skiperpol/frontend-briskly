@@ -1,4 +1,5 @@
 export { User } from "./User"
+export { type GeoPosition, type LatLngTuple, toLatLngTuple } from "./GeoPosition"
 export { AuthSession } from "./AuthSession"
 export { TripStopPhoto } from "./TripStopPhoto"
 export { JournalEntry, type JournalEntryType } from "./JournalEntry"

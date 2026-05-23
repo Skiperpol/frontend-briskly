@@ -97,6 +97,10 @@ export class TripService {
             Brama: "B22",
             Miejsce: "14A",
           },
+          undefined,
+          undefined,
+          [],
+          { lat: 51.47, lng: -0.4543 },
         ),
         new ScheduleStop(
           "s2",
@@ -105,6 +109,10 @@ export class TripService {
           "Przylot",
           "Paryż Charles de Gaulle (CDG)",
           { Czas: "2h 15m (szac.)" },
+          undefined,
+          undefined,
+          [],
+          { lat: 49.0097, lng: 2.5479 },
         ),
         new ScheduleStop(
           "s3",
@@ -114,6 +122,9 @@ export class TripService {
           "Le Meurice, Paryż",
           { Adres: "228 Rue de Rivoli, 75001 Paryż" },
           IMG.hotel,
+          undefined,
+          [],
+          { lat: 48.8656, lng: 2.328 },
         ),
         new ScheduleStop(
           "s4",
@@ -125,6 +136,7 @@ export class TripService {
           undefined,
           "Croissanty tutaj smakują jak nigdzie indziej. Czyste masło i chrupiące ciasto.",
           ["JEDZENIE", "KRAJOBRAZ"],
+          { lat: 48.8542, lng: 2.3344 },
         ),
         new ScheduleStop(
           "s5",
@@ -133,6 +145,10 @@ export class TripService {
           "Rezerwacja restauracji",
           "Le Jules Verne",
           { Stolik: "Przy oknie, piętro 2" },
+          undefined,
+          undefined,
+          [],
+          { lat: 48.8583, lng: 2.2945 },
         ),
       ],
       [
@@ -159,6 +175,18 @@ export class TripService {
           1,
         ),
       ],
+      null,
+      [
+        { lat: 52.2297, lng: 21.0122 },
+        { lat: 52.52, lng: 13.405 },
+        { lat: 52.3676, lng: 4.9041 },
+        { lat: 51.9225, lng: 4.4792 },
+        { lat: 51.47, lng: -0.4543 },
+        { lat: 49.0097, lng: 2.5479 },
+        { lat: 48.8656, lng: 2.328 },
+        { lat: 48.8542, lng: 2.3344 },
+        { lat: 48.8583, lng: 2.2945 },
+      ],
     )
 
     const amalfiTrip = new UserTrip(
@@ -179,6 +207,10 @@ export class TripService {
           "Przylot",
           "Port Salerno",
           { Prom: "Traghetti Line" },
+          undefined,
+          undefined,
+          [],
+          { lat: 40.6824, lng: 14.7681 },
         ),
         new ScheduleStop(
           "am-s2",
@@ -188,6 +220,9 @@ export class TripService {
           "Trattoria d'Alba, Positano",
           { Rezerwacja: "Taras z widokiem" },
           IMG.food,
+          undefined,
+          [],
+          { lat: 40.6281, lng: 14.4849 },
         ),
         new ScheduleStop(
           "am-s3",
@@ -197,6 +232,9 @@ export class TripService {
           "Positano — punkt widokowy",
           {},
           IMG.sunset,
+          undefined,
+          [],
+          { lat: 40.628, lng: 14.4855 },
         ),
       ],
       [
@@ -234,6 +272,13 @@ export class TripService {
           0,
         ),
       ],
+      null,
+      [
+        { lat: 40.6824, lng: 14.7681 },
+        { lat: 40.65, lng: 14.55 },
+        { lat: 40.6281, lng: 14.4849 },
+        { lat: 40.628, lng: 14.4855 },
+      ],
     )
 
     const baliTrip = new UserTrip(
@@ -255,6 +300,9 @@ export class TripService {
           "Taras ryżowy Tegallalang, Ubud",
           {},
           IMG.tropical,
+          undefined,
+          [],
+          { lat: -8.4312, lng: 115.2798 },
         ),
         new ScheduleStop(
           "b-s2",
@@ -264,6 +312,9 @@ export class TripService {
           "Plaża Seminyak",
           { Stolik: "Przy wodzie" },
           IMG.coast,
+          undefined,
+          [],
+          { lat: -8.691, lng: 115.1682 },
         ),
       ],
       [
@@ -291,6 +342,11 @@ export class TripService {
         ),
       ],
       new Date("2023-10-02"),
+      [
+        { lat: -8.4312, lng: 115.2798 },
+        { lat: -8.55, lng: 115.22 },
+        { lat: -8.691, lng: 115.1682 },
+      ],
     )
 
     const tromsoTrip = new UserTrip(
@@ -312,6 +368,9 @@ export class TripService {
           "Fjellheisen, Tromsø",
           { Temperatura: "−12 °C" },
           IMG.mountains,
+          undefined,
+          [],
+          { lat: 69.65, lng: 18.96 },
         ),
       ],
       [
@@ -328,6 +387,10 @@ export class TripService {
         ),
       ],
       new Date("2024-02-25"),
+      [
+        { lat: 69.6492, lng: 18.9553 },
+        { lat: 69.65, lng: 18.96 },
+      ],
     )
 
     this.trips = [europeanTrip, amalfiTrip, baliTrip, tromsoTrip]

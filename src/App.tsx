@@ -1,14 +1,20 @@
+import { lazy, Suspense } from "react"
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom"
 
 import { AuthPage } from "@/features/auth/AuthPage"
 import { DashboardPage } from "@/features/dashboard/DashboardPage"
 import { JournalPage } from "@/features/journal/JournalPage"
-import { GlobalMapPage } from "@/features/map/GlobalMapPage"
 import { PlannerPage } from "@/features/planner/PlannerPage"
 import { SchedulePage } from "@/features/schedule/SchedulePage"
 import { SettingsPage } from "@/features/settings/SettingsPage"
 import { AppShell } from "@/shared/components/layout/AppShell"
 import { ProtectedRoute } from "@/shared/components/layout/ProtectedRoute"
+
+const GlobalMapPage = lazy(() =>
+  import("@/features/map/GlobalMapPage").then((module) => ({
+    default: module.GlobalMapPage,
+  })),
+)
 
 function App() {
   return (
@@ -21,7 +27,20 @@ function App() {
             <Route path="planner" element={<PlannerPage />} />
             <Route path="schedule" element={<SchedulePage />} />
             <Route path="journal/*" element={<JournalPage />} />
-            <Route path="map" element={<GlobalMapPage />} />
+            <Route
+              path="map"
+              element={
+                <Suspense
+                  fallback={
+                    <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+                      Ładowanie mapy…
+                    </div>
+                  }
+                >
+                  <GlobalMapPage />
+                </Suspense>
+              }
+            />
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>
