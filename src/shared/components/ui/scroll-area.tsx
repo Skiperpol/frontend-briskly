@@ -9,7 +9,10 @@ function ScrollArea({
 }: React.ComponentProps<"div">) {
   return (
     <div
-      className={cn("overflow-y-auto overflow-x-hidden", className)}
+      className={cn(
+        "min-h-0 overflow-x-hidden overflow-y-auto [scrollbar-gutter:stable]",
+        className,
+      )}
       {...props}
     >
       {children}
