@@ -23,7 +23,7 @@ export function TopBar({ title, subtitle, action }: TopBarProps) {
   return (
     <header className="flex shrink-0 items-center justify-between gap-4 border-b border-border bg-background px-6 py-3">
       <div className="flex min-w-0 flex-1 items-center gap-4">
-        {(title || subtitle) ? (
+        {(title || subtitle) && (
           <div className="min-w-0">
             {title && <h1 className="truncate text-sm font-semibold">{title}</h1>}
             {subtitle && (
@@ -32,8 +32,6 @@ export function TopBar({ title, subtitle, action }: TopBarProps) {
               </p>
             )}
           </div>
-        ) : (
-          <span />
         )}
         {action}
       </div>

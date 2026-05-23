@@ -13,7 +13,6 @@ import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { TopBar } from "@/shared/components/layout/TopBar"
-import { useTripData } from "@/shared/hooks/useTripData"
 import { cn } from "@/shared/lib/utils"
 
 type EditableEntry = {
@@ -22,13 +21,6 @@ type EditableEntry = {
   time: string
   body: string
   photos: TripStopPhoto[]
-}
-
-type JournalStats = {
-  photos: string
-  dailyPace: string
-  temperature: string
-  altitude: string
 }
 
 function formatTripDate(date: Date): string {
@@ -55,19 +47,12 @@ function fieldInputClassName() {
 
 export function JournalDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
-  const { stats: defaultStats } = useTripData()
   const trip = TripService.getInstance().getTripById(tripId ?? "")
 
   const [tripName, setTripName] = useState("")
   const [description, setDescription] = useState("")
   const [sidebarLocation, setSidebarLocation] = useState("")
   const [entries, setEntries] = useState<EditableEntry[]>([])
-  const [journalStats, setJournalStats] = useState<JournalStats>({
-    photos: String(defaultStats.photosTaken),
-    dailyPace: defaultStats.dailyPace,
-    temperature: defaultStats.temperature,
-    altitude: defaultStats.altitude,
-  })
 
   useEffect(() => {
     if (!trip) return
@@ -80,8 +65,6 @@ export function JournalDetailPage() {
   if (!trip) {
     return <Navigate to="/journal" replace />
   }
-
-  const subtitle = formatTripDate(trip.startDate)
 
   const updateEntry = (id: string, next: EditableEntry) => {
     setEntries((prev) => prev.map((e) => (e.id === id ? next : e)))
@@ -97,10 +80,8 @@ export function JournalDetailPage() {
   return (
     <>
       <TopBar
-        title={`Dziennik: ${sidebarLocation || trip.location}`}
-        subtitle={subtitle}
         action={
-          <Button variant="outline" size="sm" asChild>
+          <Button size="sm" className="gap-2" asChild>
             <Link to="/journal">
               <ArrowLeft className="size-4" />
               Wszystkie podróże
@@ -128,6 +109,9 @@ export function JournalDetailPage() {
           <div className="pr-24">
             <h2 className="text-2xl font-bold">{tripName}</h2>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              {formatTripDate(trip.startDate)}
+            </p>
           </div>
         </EditableBlock>
 
@@ -142,19 +126,6 @@ export function JournalDetailPage() {
             onLocationChange={setSidebarLocation}
           />
         </div>
-
-        <JournalStatsBar
-          stats={journalStats}
-          onChange={setJournalStats}
-          onCancel={() =>
-            setJournalStats({
-              photos: String(defaultStats.photosTaken),
-              dailyPace: defaultStats.dailyPace,
-              temperature: defaultStats.temperature,
-              altitude: defaultStats.altitude,
-            })
-          }
-        />
       </ScrollArea>
     </>
   )
@@ -477,64 +448,5 @@ function JournalSidebar({
         </div>
       </EditableBlock>
     </div>
-  )
-}
-
-function JournalStatsBar({
-  stats,
-  onChange,
-  onCancel,
-}: {
-  stats: JournalStats
-  onChange: (stats: JournalStats) => void
-  onCancel: () => void
-}) {
-  const [draft, setDraft] = useState(stats)
-
-  useEffect(() => {
-    setDraft(stats)
-  }, [stats])
-
-  const items = [
-    { key: "photos" as const, label: "Zdjęcia" },
-    { key: "dailyPace" as const, label: "Tempo dzienne" },
-    { key: "temperature" as const, label: "Temperatura" },
-    { key: "altitude" as const, label: "Wysokość" },
-  ]
-
-  return (
-    <EditableBlock
-      className="border-t border-border bg-background px-6 py-4"
-      editContent={
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          {items.map((item) => (
-            <div key={item.key} className="space-y-1">
-              <Label htmlFor={`stat-${item.key}`}>{item.label}</Label>
-              <Input
-                id={`stat-${item.key}`}
-                value={draft[item.key]}
-                onChange={(e) => setDraft({ ...draft, [item.key]: e.target.value })}
-              />
-            </div>
-          ))}
-        </div>
-      }
-      onSave={() => onChange(draft)}
-      onCancel={() => {
-        setDraft(stats)
-        onCancel()
-      }}
-    >
-      <div className="flex flex-wrap gap-8 pr-24">
-        {items.map((item) => (
-          <div key={item.key}>
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              {item.label}
-            </p>
-            <p className="text-lg font-bold">{stats[item.key]}</p>
-          </div>
-        ))}
-      </div>
-    </EditableBlock>
   )
 }
