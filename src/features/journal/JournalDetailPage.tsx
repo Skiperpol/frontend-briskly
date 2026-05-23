@@ -74,6 +74,18 @@ export function JournalDetailPage() {
     setNotes((prev) => prev.map((n) => (n.id === id ? next : n)))
   }
 
+  const deleteNote = (id: string) => {
+    setNotes((prev) => {
+      const note = prev.find((n) => n.id === id)
+      note?.photos.forEach((photo) => {
+        if (photo.imageUrl.startsWith("blob:")) {
+          URL.revokeObjectURL(photo.imageUrl)
+        }
+      })
+      return prev.filter((n) => n.id !== id)
+    })
+  }
+
   const reorderStopNotes = (reordered: EditableNote[]) => {
     setNotes((prev) => {
       const other = prev.filter((n) => n.scheduleStopId !== selectedStopId)
@@ -168,6 +180,7 @@ export function JournalDetailPage() {
                 notes={stopNotes}
                 onReorder={reorderStopNotes}
                 onUpdate={updateNote}
+                onDelete={deleteNote}
               />
             </div>
           </ScrollArea>

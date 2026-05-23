@@ -8,9 +8,14 @@ import { cn } from "@/shared/lib/utils"
 type NotePhotoFieldsProps = {
   photos: EditablePhoto[]
   onChange: (photos: EditablePhoto[]) => void
+  showAddButton?: boolean
 }
 
-export function NotePhotoFields({ photos, onChange }: NotePhotoFieldsProps) {
+export function NotePhotoFields({
+  photos,
+  onChange,
+  showAddButton = true,
+}: NotePhotoFieldsProps) {
   const handleFiles = (files: FileList | null) => {
     if (!files?.length) return
     const added = Array.from(files).map((file) => ({
@@ -38,35 +43,42 @@ export function NotePhotoFields({ photos, onChange }: NotePhotoFieldsProps) {
     onChange(photos.filter((photo) => photo.id !== id))
   }
 
+  const addPhotoButton = showAddButton ? (
+    <Button type="button" variant="outline" size="sm" className="gap-1.5" asChild>
+      <label className="cursor-pointer">
+        <ImagePlus className="size-4" />
+        Dodaj zdjęcie
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          className="sr-only"
+          onChange={(e) => {
+            handleFiles(e.target.files)
+            e.target.value = ""
+          }}
+        />
+      </label>
+    </Button>
+  ) : null
+
+  if (photos.length === 0 && !showAddButton) {
+    return null
+  }
+
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Label>Zdjęcia</Label>
-        <Button type="button" variant="outline" size="sm" className="gap-1.5" asChild>
-          <label className="cursor-pointer">
-            <ImagePlus className="size-4" />
-            Dodaj zdjęcie
-            <input
-              type="file"
-              accept="image/*"
-              multiple
-              className="sr-only"
-              onChange={(e) => {
-                handleFiles(e.target.files)
-                e.target.value = ""
-              }}
-            />
-          </label>
-        </Button>
+        {addPhotoButton}
       </div>
-      {photos.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Brak zdjęć</p>
-      ) : (
+      {photos.length > 0 && (
         <ul className="space-y-3">
           {photos.map((photo) => (
             <li
               key={photo.id}
               className="flex items-stretch gap-3 rounded-lg border border-border p-2"
+              onMouseDown={(e) => e.stopPropagation()}
             >
               <img
                 src={photo.imageUrl}
@@ -78,7 +90,7 @@ export function NotePhotoFields({ photos, onChange }: NotePhotoFieldsProps) {
                 value={photo.userDescription}
                 onChange={(e) => updateDescription(photo.id, e.target.value)}
                 className={cn(
-                  "h-16 w-full min-w-0 flex-1 resize-none rounded-md border border-input bg-transparent px-2.5 py-2 text-xs outline-none",
+                  "h-16 w-full min-w-0 flex-1 resize-none rounded-md border border-input bg-background px-2.5 py-2 text-xs outline-none",
                   "focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50",
                 )}
               />

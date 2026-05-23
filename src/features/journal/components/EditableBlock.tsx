@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react"
-import { Pencil } from "lucide-react"
+import { Pencil, Trash2 } from "lucide-react"
 
 import { Button } from "@/shared/components/ui/button"
 import { cn } from "@/shared/lib/utils"
@@ -9,6 +9,7 @@ type EditableBlockProps = {
   editContent: ReactNode
   onSave: () => void
   onCancel: () => void
+  onDelete?: () => void
   className?: string
 }
 
@@ -17,6 +18,7 @@ export function EditableBlock({
   editContent,
   onSave,
   onCancel,
+  onDelete,
   className,
 }: EditableBlockProps) {
   const [editing, setEditing] = useState(false)
@@ -50,16 +52,30 @@ export function EditableBlock({
   return (
     <div className={cn("group relative", className)}>
       {children}
-      <Button
-        type="button"
-        variant="outline"
-        size="sm"
-        className="absolute top-4 right-4 gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
-        onClick={() => setEditing(true)}
-      >
-        <Pencil className="size-3.5" />
-        Edytuj
-      </Button>
+      <div className="absolute inset-y-4 right-4 flex w-36 flex-col justify-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="w-full justify-center gap-1.5"
+          onClick={() => setEditing(true)}
+        >
+          <Pencil className="size-3.5 shrink-0" />
+          Edytuj
+        </Button>
+        {onDelete && (
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="w-full justify-center gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            onClick={onDelete}
+          >
+            <Trash2 className="size-3.5 shrink-0" />
+            Usuń notatkę
+          </Button>
+        )}
+      </div>
     </div>
   )
 }

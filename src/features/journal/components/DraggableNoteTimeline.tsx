@@ -12,13 +12,14 @@ import { Label } from "@/shared/components/ui/label"
 import { cn } from "@/shared/lib/utils"
 
 function fieldInputClassName() {
-  return "w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+  return "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
 }
 
 type DraggableNoteTimelineProps = {
   notes: EditableNote[]
   onReorder: (notes: EditableNote[]) => void
   onUpdate: (id: string, note: EditableNote) => void
+  onDelete: (id: string) => void
 }
 
 function isNoOpInsert(fromIndex: number, insertIndex: number): boolean {
@@ -39,6 +40,7 @@ export function DraggableNoteTimeline({
   notes,
   onReorder,
   onUpdate,
+  onDelete,
 }: DraggableNoteTimelineProps) {
   const [dragId, setDragId] = useState<string | null>(null)
   const [insertIndex, setInsertIndex] = useState<number | null>(null)
@@ -154,7 +156,11 @@ export function DraggableNoteTimeline({
             >
               <GripVertical className="size-4" />
             </button>
-            <NoteCard note={note} onSave={(next) => onUpdate(note.id, next)} />
+            <NoteCard
+              note={note}
+              onSave={(next) => onUpdate(note.id, next)}
+              onDelete={() => onDelete(note.id)}
+            />
           </article>
         </Fragment>
       ))}
@@ -166,9 +172,11 @@ export function DraggableNoteTimeline({
 function NoteCard({
   note,
   onSave,
+  onDelete,
 }: {
   note: EditableNote
   onSave: (note: EditableNote) => void
+  onDelete: () => void
 }) {
   const [draft, setDraft] = useState(note)
 
@@ -183,8 +191,9 @@ function NoteCard({
           editContent={<NoteEditForm draft={draft} onChange={setDraft} />}
           onSave={() => onSave(draft)}
           onCancel={() => setDraft(note)}
+          onDelete={onDelete}
         >
-          <div className="space-y-3 pl-6 pr-24">
+          <div className="space-y-3 py-4 pl-6 pr-44">
             <div>
               <p className="text-[10px] text-muted-foreground">
                 {formatNoteDay(note.day)}
@@ -235,6 +244,7 @@ function NoteEditForm({
             type="date"
             value={draft.day}
             onChange={(e) => onChange({ ...draft, day: e.target.value })}
+            className="bg-background"
           />
         </div>
         <TimeInputField
@@ -249,6 +259,7 @@ function NoteEditForm({
           id={`title-${draft.id}`}
           value={draft.title}
           onChange={(e) => onChange({ ...draft, title: e.target.value })}
+          className="bg-background"
         />
       </div>
       <div className="space-y-1">
@@ -263,6 +274,7 @@ function NoteEditForm({
       <NotePhotoFields
         photos={draft.photos}
         onChange={(photos) => onChange({ ...draft, photos })}
+        showAddButton
       />
     </div>
   )

@@ -13,7 +13,7 @@ import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { cn } from "@/shared/lib/utils"
 
 function fieldInputClassName() {
-  return "w-full rounded-lg border border-input bg-transparent px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
+  return "w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
 }
 
 type NewNoteFormProps = {
@@ -82,6 +82,7 @@ export function NewNoteForm({ defaultDay, onAdd, disabled }: NewNoteFormProps) {
                       type="date"
                       value={day}
                       onChange={(e) => setDay(e.target.value)}
+                      className="bg-background"
                     />
                   </div>
                   <TimeInputField
@@ -97,6 +98,7 @@ export function NewNoteForm({ defaultDay, onAdd, disabled }: NewNoteFormProps) {
                     placeholder="np. Widok z tarasu"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
+                    className="bg-background"
                   />
                 </div>
                 <div className="space-y-1">

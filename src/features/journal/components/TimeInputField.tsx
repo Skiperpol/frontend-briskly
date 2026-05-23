@@ -25,7 +25,7 @@ export function TimeInputField({
           type="time"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className="h-9 min-w-0 flex-1"
+          className="h-9 min-w-0 flex-1 bg-background"
         />
         <Button
           type="button"
