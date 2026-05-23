@@ -23,7 +23,7 @@ export function GlobalMap({ layers, focusPositions, focusKey }: GlobalMapProps) 
     <MapContainer
       center={DEFAULT_CENTER}
       zoom={DEFAULT_ZOOM}
-      className="h-full w-full z-0 bg-[#aad3df]"
+      className="h-full w-full z-0 bg-[#1a3d2e]"
       preferCanvas
       zoomControl
       minZoom={2}
@@ -31,8 +31,14 @@ export function GlobalMap({ layers, focusPositions, focusKey }: GlobalMapProps) 
       worldCopyJump
     >
       <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='Tiles &copy; <a href="https://www.esri.com/">Esri</a> — Earthstar Geographics'
+        url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
+        maxNativeZoom={19}
+      />
+      <TileLayer
+        attribution="Labels &copy; Esri"
+        url="https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}"
+        opacity={0.85}
       />
       {layers.map((layer) => (
         <TripRouteLayer key={layer.tripId} layer={layer} />
