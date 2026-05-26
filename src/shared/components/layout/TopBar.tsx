@@ -15,6 +15,7 @@ export function TopBar({ title, subtitle, action, trailing }: TopBarProps) {
   return (
     <header className="flex h-14 w-full shrink-0 items-center justify-between gap-4 border-b border-border bg-sidebar px-6">
       <div className="flex min-w-0 flex-1 items-center gap-4">
+        {action}
         {hasTitleBlock && (
           <div className="flex min-w-0 flex-col justify-center">
             <h1
@@ -37,7 +38,6 @@ export function TopBar({ title, subtitle, action, trailing }: TopBarProps) {
             </p>
           </div>
         )}
-        {action}
       </div>
 
       {trailing ? <div className="flex shrink-0 items-center">{trailing}</div> : null}
