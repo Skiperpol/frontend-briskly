@@ -1,11 +1,10 @@
 import { Link, NavLink } from "react-router-dom"
 import {
-  BookOpen,
-  CalendarDays,
   Compass,
   Globe2,
   LayoutDashboard,
   LogOut,
+  Map,
   Plus,
   Settings,
 } from "lucide-react"
@@ -21,11 +20,10 @@ import {
 import { cn } from "@/shared/lib/utils"
 
 const navItems = [
-  { to: "/", label: "Panel główny", icon: LayoutDashboard },
-  { to: "/planner", label: "Planowanie", icon: Compass },
-  { to: "/schedule", label: "Harmonogram", icon: CalendarDays },
-  { to: "/journal", label: "Dziennik", icon: BookOpen },
-  { to: "/map", label: "Mapa globalna", icon: Globe2 },
+  { to: "/", label: "Panel główny", icon: LayoutDashboard, end: true },
+  { to: "/planner", label: "Planowanie", icon: Compass, end: false },
+  { to: "/trasy", label: "Trasy", icon: Map, end: false },
+  { to: "/map", label: "Mapa tras", icon: Globe2, end: true },
 ] as const
 
 export function AppSidebar() {
@@ -41,11 +39,11 @@ export function AppSidebar() {
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5">
-        {navItems.map(({ to, label, icon: Icon }) => (
+        {navItems.map(({ to, label, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
-            end={to === "/"}
+            end={end}
             className={({ isActive }) =>
               cn(
                 "relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
@@ -72,9 +70,11 @@ export function AppSidebar() {
       </nav>
 
       <div className="mt-4 space-y-3">
-        <Button className="w-full gap-2">
-          <Plus className="size-4" />
-          Nowa wycieczka
+        <Button className="w-full gap-2" asChild>
+          <Link to="/planner">
+            <Plus className="size-4" />
+            Nowa wycieczka
+          </Link>
         </Button>
 
         {session && (

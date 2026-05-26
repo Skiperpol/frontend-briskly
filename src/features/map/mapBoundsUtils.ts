@@ -1,102 +1,99 @@
-import L from "leaflet"
+import type { Map as MapboxMap } from "mapbox-gl"
 
 import type { LatLngTuple } from "@/domain/models/GeoPosition"
+
+/** [[west, south], [east, north]] */
+export type MapboxBounds = [[number, number], [number, number]]
 
 const MIN_LAT_SPAN = 0.35
 const MIN_LNG_SPAN = 0.35
 
-/** Początkowy kadr: obie Ameryki, Afryka i Eurasia. */
-export const WORLD_VIEW_BOUNDS = L.latLngBounds(
-  [-58, -168],
-  [72, 168],
-)
+/** Maksymalny obszar mapy tras — tylko Europa. */
+export const EUROPE_MAX_BOUNDS: MapboxBounds = [
+  [-25, 34],
+  [45, 72],
+]
 
-const MAX_LAT = 85.05112878
-const MIN_LAT = -85.05112878
+/** Domyślny kadr przy widoku wszystkich tras. */
+export const EUROPE_VIEW_BOUNDS: MapboxBounds = [
+  [-18, 36],
+  [38, 66],
+]
 
-/**
- * Ogranicza tylko szerokość geograficzną.
- * Szeroki zakres długości geograficznej pozwala na swobodne przesuwanie w poziomie (worldCopyJump).
- */
-export const LATITUDE_MAX_BOUNDS = L.latLngBounds(
-  [MIN_LAT, -400],
-  [MAX_LAT, 400],
-)
+export function expandBounds(bounds: MapboxBounds): MapboxBounds {
+  const [[west, south], [east, north]] = bounds
+  const centerLat = (south + north) / 2
+  const centerLng = (west + east) / 2
+  const latSpan = Math.max(north - south, MIN_LAT_SPAN)
+  const lngSpan = Math.max(east - west, MIN_LNG_SPAN)
 
-function clampMapLatitude(map: L.Map): void {
-  const bounds = map.getBounds()
-  if (bounds.getNorth() <= MAX_LAT && bounds.getSouth() >= MIN_LAT) return
-
-  const center = map.getCenter()
-  const zoom = map.getZoom()
-  const latSpan = bounds.getNorth() - bounds.getSouth()
-  let lat = center.lat
-
-  if (latSpan >= MAX_LAT - MIN_LAT) {
-    lat = 0
-  } else if (bounds.getNorth() > MAX_LAT) {
-    lat = MAX_LAT - latSpan / 2
-  } else if (bounds.getSouth() < MIN_LAT) {
-    lat = MIN_LAT + latSpan / 2
-  }
-
-  if (Math.abs(lat - center.lat) > 1e-8) {
-    map.setView([lat, center.lng], zoom, { animate: false })
-  }
+  return [
+    [centerLng - lngSpan / 2, centerLat - latSpan / 2],
+    [centerLng + lngSpan / 2, centerLat + latSpan / 2],
+  ]
 }
 
-export function setupLatitudeClamp(map: L.Map): () => void {
-  map.setMaxBounds(LATITUDE_MAX_BOUNDS)
-  map.options.maxBoundsViscosity = 1
+function clampBoundsToEurope(bounds: MapboxBounds): MapboxBounds {
+  const [[west, south], [east, north]] = bounds
+  const [[eWest, eSouth], [eEast, eNorth]] = EUROPE_MAX_BOUNDS
 
-  const onMove = () => clampMapLatitude(map)
-
-  map.on("move", onMove)
-  map.on("zoomend", onMove)
-
-  return () => {
-    map.off("move", onMove)
-    map.off("zoomend", onMove)
-    map.setMaxBounds(null as unknown as L.LatLngBounds)
-    map.options.maxBoundsViscosity = 0
-  }
+  return [
+    [Math.max(west, eWest), Math.max(south, eSouth)],
+    [Math.min(east, eEast), Math.min(north, eNorth)],
+  ]
 }
 
-export function expandBounds(bounds: L.LatLngBounds): L.LatLngBounds {
-  const center = bounds.getCenter()
-  const latSpan = Math.max(bounds.getNorth() - bounds.getSouth(), MIN_LAT_SPAN)
-  const lngSpan = Math.max(bounds.getEast() - bounds.getWest(), MIN_LNG_SPAN)
+export function positionsToBounds(positions: LatLngTuple[]): MapboxBounds | null {
+  if (positions.length === 0) return null
 
-  return L.latLngBounds(
-    [center.lat - latSpan / 2, center.lng - lngSpan / 2],
-    [center.lat + latSpan / 2, center.lng + lngSpan / 2],
+  let minLat = positions[0][0]
+  let maxLat = positions[0][0]
+  let minLng = positions[0][1]
+  let maxLng = positions[0][1]
+
+  for (const [lat, lng] of positions) {
+    minLat = Math.min(minLat, lat)
+    maxLat = Math.max(maxLat, lat)
+    minLng = Math.min(minLng, lng)
+    maxLng = Math.max(maxLng, lng)
+  }
+
+  return clampBoundsToEurope(
+    expandBounds([
+      [minLng, minLat],
+      [maxLng, maxLat],
+    ]),
   )
 }
 
-export function applyWorldView(map: L.Map): void {
-  const padding = L.point(20, 20)
-  const zoom = Math.min(map.getBoundsZoom(WORLD_VIEW_BOUNDS, false, padding), 3)
-
-  map.flyTo(WORLD_VIEW_BOUNDS.getCenter(), zoom, { duration: 0.6 })
-}
-
-export function applyTripView(map: L.Map, bounds: L.LatLngBounds, maxZoom: number): void {
-  const paddingTopLeft = L.point(8, 16)
-  const paddingBottomRight = L.point(8, 16)
-
-  map.flyToBounds(bounds, {
-    paddingTopLeft,
-    paddingBottomRight,
-    maxZoom,
-    duration: 0.6,
+export function applyEuropeView(map: MapboxMap): void {
+  map.fitBounds(EUROPE_VIEW_BOUNDS, {
+    padding: { top: 24, bottom: 24, left: 24, right: 24 },
+    maxZoom: 5,
+    duration: 600,
   })
 }
 
-export function positionsToBounds(positions: LatLngTuple[]): L.LatLngBounds | null {
-  if (positions.length === 0) return null
-  if (positions.length === 1) {
-    const [lat, lng] = positions[0]
-    return expandBounds(L.latLngBounds([lat, lng], [lat, lng]))
-  }
-  return expandBounds(L.latLngBounds(positions))
+export function applyTripView(map: MapboxMap, bounds: MapboxBounds, maxZoom: number): void {
+  map.fitBounds(clampBoundsToEurope(bounds), {
+    padding: { top: 48, bottom: 48, left: 48, right: 48 },
+    maxZoom,
+    duration: 600,
+  })
+}
+
+export function applyPointView(
+  map: MapboxMap,
+  [lat, lng]: LatLngTuple,
+  zoom = 13,
+): void {
+  const [[eWest, eSouth], [eEast, eNorth]] = EUROPE_MAX_BOUNDS
+  const clampedLng = Math.min(Math.max(lng, eWest), eEast)
+  const clampedLat = Math.min(Math.max(lat, eSouth), eNorth)
+
+  map.flyTo({
+    center: [clampedLng, clampedLat],
+    zoom,
+    duration: 600,
+  })
 }

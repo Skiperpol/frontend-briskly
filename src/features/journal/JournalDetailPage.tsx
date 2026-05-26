@@ -65,7 +65,7 @@ export function JournalDetailPage() {
   const selectedStop = trip?.scheduleStops.find((s) => s.id === selectedStopId)
 
   if (!trip) {
-    return <Navigate to="/journal" replace />
+    return <Navigate to="/trasy" replace />
   }
 
   const defaultNoteDay = toIsoDay(trip.startDate)
@@ -112,9 +112,9 @@ export function JournalDetailPage() {
     <PageLayout
       action={
         <Button size="sm" className="gap-2" asChild>
-          <Link to="/journal">
+          <Link to="/trasy">
             <ArrowLeft className="size-4" />
-            Wszystkie podróże
+            Wszystkie trasy
           </Link>
         </Button>
       }

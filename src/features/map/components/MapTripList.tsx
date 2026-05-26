@@ -10,6 +10,8 @@ type MapTripListProps = {
   onSelectTrip: (tripId: string) => void
   tripCount: number
   totalKilometers: string
+  className?: string
+  emptyMessage?: string
 }
 
 export function MapTripList({
@@ -19,12 +21,17 @@ export function MapTripList({
   onSelectTrip,
   tripCount,
   totalKilometers,
+  className,
+  emptyMessage = "Brak tras do wyświetlenia na mapie.",
 }: MapTripListProps) {
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      <p className="shrink-0 px-1 text-sm font-semibold">Wycieczki</p>
-      <ScrollArea className="mt-3 min-h-0 flex-1 pr-1">
-        <ul className="space-y-2 pr-3">
+    <div className={cn("flex h-full min-h-0 flex-col", className)}>
+      <p className="shrink-0 text-sm font-semibold">Wycieczki</p>
+      <ScrollArea className="mt-3 min-h-0 flex-1 scrollbar-gutter-auto">
+        {layers.length === 0 ? (
+          <p className="px-1 text-sm text-muted-foreground">{emptyMessage}</p>
+        ) : (
+        <ul className="space-y-2">
           {layers.map((layer) => {
             const trip = trips.find((item) => item.id === layer.tripId)
             const isSelected = selectedTripId === layer.tripId
@@ -68,6 +75,7 @@ export function MapTripList({
             )
           })}
         </ul>
+        )}
       </ScrollArea>
 
       <div className="mt-4 shrink-0 border-t border-sidebar-border pt-4">

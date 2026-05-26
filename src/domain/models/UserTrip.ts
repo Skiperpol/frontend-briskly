@@ -8,14 +8,14 @@ export class UserTrip {
   readonly slug: string
   name: string
   readonly heroImageUrl: string
-  readonly location: string
+  location: string
   readonly description: string
   readonly tags: string[]
   readonly startDate: Date
-  readonly legs: RouteLeg[]
-  readonly scheduleStops: ScheduleStop[]
+  legs: RouteLeg[]
+  scheduleStops: ScheduleStop[]
   readonly journalEntries: JournalEntry[]
-  readonly mapPath: GeoPosition[]
+  mapPath: GeoPosition[]
   finalizedAt: Date | null
 
   constructor(

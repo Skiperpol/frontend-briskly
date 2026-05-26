@@ -14,8 +14,11 @@ export type TripMapLayer = {
   tripId: string
   name: string
   color: string
+  /** Wypełniane przez Mapbox Directions (drogi). */
   path: GeoPosition[]
   stops: TripMapStop[]
+  /** Przerywana linia (np. podgląd przed zatwierdzeniem). */
+  dashed?: boolean
 }
 
 export function buildTripMapLayers(trips: UserTrip[]): TripMapLayer[] {
@@ -25,18 +28,13 @@ export function buildTripMapLayers(trips: UserTrip[]): TripMapLayer[] {
         .map((stop) => toMapStop(stop))
         .filter((stop): stop is TripMapStop => stop !== null)
 
-      const path =
-        trip.mapPath.length > 0
-          ? trip.mapPath
-          : stops.map((stop) => stop.position)
-
-      if (path.length === 0) return null
+      if (stops.length < 2) return null
 
       return {
         tripId: trip.id,
         name: trip.name,
         color: TRIP_MAP_COLORS[index % TRIP_MAP_COLORS.length] as string,
-        path,
+        path: [] as GeoPosition[],
         stops,
       }
     })
@@ -53,9 +51,13 @@ function toMapStop(stop: ScheduleStop): TripMapStop | null {
   }
 }
 
+export function getLayerDisplayPath(layer: TripMapLayer): GeoPosition[] {
+  return layer.path.length >= 2 ? layer.path : []
+}
+
 export function collectAllPositions(layers: TripMapLayer[]): GeoPosition[] {
   return layers.flatMap((layer) => [
-    ...layer.path,
+    ...getLayerDisplayPath(layer),
     ...layer.stops.map((stop) => stop.position),
   ])
 }

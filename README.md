@@ -110,7 +110,7 @@ Trzeba zdefiniować przejście podróży z fazy edycji do fazy archiwalnej. Kluc
 ### 4. Wizualizacja i archiwizacja
 
 - **Lista wycieczek** jako proste **archiwum planów**.
-- **Interaktywna mapa globalna:** zbiorcze wyświetlanie odbytych tras i „siatki połączeń”.
+- **Mapa tras Flixbus (Mapbox):** zbiorcze wyświetlanie tras autobusowych wyznaczanych po drogach (Mapbox Directions API) na podstawie stacji początkowej i końcowej.
 - **Filtrowanie historyczne:** przegląd według dat lub regionów.
 - **Tryb archiwalny:** zamrożenie zakończonej podróży i blokada edycji logistycznej w celu ochrony integralności wspomnień.
 

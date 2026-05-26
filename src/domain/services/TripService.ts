@@ -9,6 +9,11 @@ import {
   TripStopPhoto,
   UserTrip,
 } from "@/domain/models"
+import type { PlannerRouteLeg } from "@/features/planner/types"
+import {
+  plannerLegsToTripRoute,
+  tripStopsToPlannerLegs,
+} from "@/features/planner/plannerTripUtils"
 
 const IMG = {
   mountains:
@@ -34,6 +39,7 @@ export class TripService {
   private static instance: TripService | null = null
 
   private readonly trips: UserTrip[]
+  private readonly plannerDrafts = new Map<string, PlannerRouteLeg[]>()
   private readonly destinations: Destination[]
   private readonly activities: ActivityItem[]
   private readonly travelLogs: TravelLog[]
@@ -254,7 +260,7 @@ export class TripService {
           1,
         ),
       ],
-      null,
+      new Date("2024-06-20"),
       [
         { lat: 52.2297, lng: 21.0122 },
         { lat: 52.52, lng: 13.405 },
@@ -779,7 +785,76 @@ export class TripService {
       ],
     )
 
-    this.trips = [europeanTrip, amalfiTrip, baliTrip, tromsoTrip]
+    const flixWroclawPoznan = new UserTrip(
+      "trip-flix-wro-poz",
+      "flix-wroclaw-poznan",
+      "Flixbus: Wrocław → Poznań",
+      IMG.street,
+      "Dworzec autobusowy",
+      "Bezpośrednie połączenie Flixbus — trasa wyznaczana po drogach z Mapbox.",
+      ["#FLIX", "#BUS"],
+      new Date("2024-11-08"),
+      [
+        new RouteLeg(
+          "fx-leg-1",
+          "bus",
+          "Wrocław, Dworzec Autobusowy",
+          "Poznań, Dworzec Autobusowy",
+          "FlixBus 1234",
+          "2h 15m",
+          "Bezpośrednio",
+        ),
+      ],
+      [
+        new ScheduleStop(
+          "fx-s1",
+          "bus",
+          "06:45",
+          "Wyjazd",
+          "Wrocław, Dworzec Autobusowy",
+          { FlixBus: "1234", Peron: "5" },
+          undefined,
+          undefined,
+          [],
+          { lat: 51.0988, lng: 17.0385 },
+        ),
+        new ScheduleStop(
+          "fx-s2",
+          "bus",
+          "09:00",
+          "Przyjazd",
+          "Poznań, Dworzec Autobusowy",
+          { Peron: "2" },
+          undefined,
+          undefined,
+          [],
+          { lat: 52.4025, lng: 16.9125 },
+        ),
+      ],
+      [
+        new JournalEntry(
+          "j-fx1",
+          "fx-s1",
+          "2024-11-08",
+          "W trasie",
+          "07:30",
+          "Autobus jedzie autostradą A2 — widok z okna na równinę Wielkopolski.",
+          "sight",
+          [],
+          0,
+        ),
+      ],
+      new Date("2024-11-08"),
+      [],
+    )
+
+    this.trips = [
+      flixWroclawPoznan,
+      europeanTrip,
+      amalfiTrip,
+      baliTrip,
+      tromsoTrip,
+    ]
 
     this.destinations = [
       new Destination(
@@ -928,5 +1003,81 @@ export class TripService {
 
   getStats(): DashboardStats {
     return this.stats
+  }
+
+  getPlanningTrips(): UserTrip[] {
+    return this.trips.filter((trip) => !trip.isFinalized)
+  }
+
+  createPlanningTrip(): UserTrip {
+    const id = `trip-plan-${Date.now()}`
+    const trip = new UserTrip(
+      id,
+      `plan-${Date.now()}`,
+      "Nowa podróż",
+      IMG.street,
+      "Planowanie",
+      "Trasa w przygotowaniu — dodaj przystanki Flixbus.",
+      ["#PLANOWANIE"],
+      new Date(),
+      [],
+      [],
+      [],
+      null,
+      [],
+    )
+    this.trips.unshift(trip)
+    this.plannerDrafts.set(id, [])
+    return trip
+  }
+
+  getPlannerLegs(tripId: string): PlannerRouteLeg[] {
+    const draft = this.plannerDrafts.get(tripId)
+    if (draft) {
+      return draft.map((leg) => ({ ...leg }))
+    }
+
+    const trip = this.getTripById(tripId)
+    if (!trip || trip.isFinalized || trip.scheduleStops.length === 0) {
+      return []
+    }
+
+    return tripStopsToPlannerLegs(trip.scheduleStops)
+  }
+
+  savePlannerLegs(tripId: string, legs: PlannerRouteLeg[]): void {
+    const trip = this.getTripById(tripId)
+    if (!trip || trip.isFinalized) return
+
+    const copy = legs.map((leg) => ({ ...leg }))
+    this.plannerDrafts.set(tripId, copy)
+
+    const { scheduleStops, routeLegs, mapPath } = plannerLegsToTripRoute(copy)
+    trip.scheduleStops = scheduleStops
+    trip.legs = routeLegs
+    trip.mapPath = mapPath
+
+    if (copy.length > 0) {
+      const first = copy[0]!
+      const last = copy[copy.length - 1]!
+      trip.name =
+        copy.length === 1
+          ? `Podróż: ${first.cityLabel}`
+          : `${first.cityLabel} → ${last.cityLabel}`
+      trip.location = last.cityLabel
+    }
+  }
+
+  finalizeTrip(tripId: string): boolean {
+    const trip = this.getTripById(tripId)
+    if (!trip || trip.isFinalized) return false
+
+    const legs = this.getPlannerLegs(tripId)
+    if (legs.length === 0) return false
+
+    this.savePlannerLegs(tripId, legs)
+    trip.finalize()
+    this.plannerDrafts.delete(tripId)
+    return true
   }
 }
