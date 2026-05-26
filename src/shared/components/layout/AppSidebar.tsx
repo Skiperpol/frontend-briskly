@@ -2,7 +2,6 @@ import { Link, NavLink } from "react-router-dom"
 import {
   Compass,
   Globe2,
-  LayoutDashboard,
   LogOut,
   Map,
   Plus,
@@ -20,7 +19,6 @@ import {
 import { cn } from "@/shared/lib/utils"
 
 const navItems = [
-  { to: "/", label: "Panel główny", icon: LayoutDashboard, end: true },
   { to: "/planner", label: "Planowanie", icon: Compass, end: false },
   { to: "/trasy", label: "Trasy", icon: Map, end: false },
   { to: "/map", label: "Mapa tras", icon: Globe2, end: true },

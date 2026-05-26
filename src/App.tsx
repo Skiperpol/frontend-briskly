@@ -2,7 +2,6 @@ import { lazy, Suspense } from "react"
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom"
 
 import { AuthPage } from "@/features/auth/AuthPage"
-import { DashboardPage } from "@/features/dashboard/DashboardPage"
 import { PlannerRoutes } from "@/features/planner/PlannerRoutes"
 import { RoutesPage } from "@/features/routes/RoutesPage"
 import { SettingsPage } from "@/features/settings/SettingsPage"
@@ -27,7 +26,7 @@ function App() {
         <Route path="/auth" element={<AuthPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
-            <Route index element={<DashboardPage />} />
+            <Route index element={<Navigate to="/trasy" replace />} />
             <Route path="planner/*" element={<PlannerRoutes />} />
             <Route path="trasy/*" element={<RoutesPage />} />
             <Route path="journal" element={<Navigate to="/trasy" replace />} />
@@ -50,7 +49,7 @@ function App() {
             <Route path="settings" element={<SettingsPage />} />
           </Route>
         </Route>
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/trasy" replace />} />
       </Routes>
     </BrowserRouter>
   )

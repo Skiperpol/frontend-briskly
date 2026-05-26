@@ -17,7 +17,7 @@ export function AuthPage() {
   const [tab, setTab] = useState<AuthTab>("login")
 
   const redirectTo =
-    (location.state as { from?: string } | null)?.from ?? "/"
+    (location.state as { from?: string } | null)?.from ?? "/trasy"
 
   if (isAuthenticated) {
     return <Navigate to={redirectTo} replace />
