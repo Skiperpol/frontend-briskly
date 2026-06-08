@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
 import type { ReactNode } from "react"
+import { useState } from "react"
+import { useForm } from "react-hook-form"
 import { BookOpen, Camera, Compass, Flag, Pencil, Rocket } from "lucide-react"
 
 import { AuthError } from "@/domain/services/AuthService"
@@ -7,7 +9,15 @@ import { UserAvatar } from "@/shared/components/UserAvatar"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/shared/components/ui/card"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from "@/shared/components/ui/form"
 import { Input } from "@/shared/components/ui/input"
+import { displayNameSchema, type DisplayNameFormValues } from "@/shared/schemas/authSchemas"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { useAuth } from "@/shared/context/AuthContext"
@@ -107,71 +117,71 @@ function EditableDisplayName({
   onSave: (displayName: string) => Promise<void>
 }) {
   const [editing, setEditing] = useState(false)
-  const [draft, setDraft] = useState(value)
   const [error, setError] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
 
-  useEffect(() => {
-    if (!editing) {
-      setDraft(value)
-    }
-  }, [value, editing])
+  const form = useForm<DisplayNameFormValues>({
+    resolver: zodResolver(displayNameSchema),
+    defaultValues: { displayName: value },
+  })
 
-  const handleSave = async () => {
+  const handleSave = form.handleSubmit(async (values) => {
     setError(null)
     setSaved(false)
-    const trimmed = draft.trim()
-    if (!trimmed) {
-      setError("Podaj imię i nazwisko.")
-      return
-    }
-    if (trimmed === value) {
+    if (values.displayName === value) {
       setEditing(false)
       return
     }
     try {
-      await onSave(trimmed)
+      await onSave(values.displayName)
       setSaved(true)
       setEditing(false)
     } catch (err) {
       setError(err instanceof AuthError ? err.message : "Nie udało się zapisać zmian.")
     }
-  }
+  })
 
   const handleCancel = () => {
-    setDraft(value)
+    form.reset({ displayName: value })
     setError(null)
     setEditing(false)
   }
 
   if (editing) {
     return (
-      <div className="space-y-2">
-        <Input
-          value={draft}
-          onChange={(e) => {
-            setDraft(e.target.value)
-            setError(null)
-            setSaved(false)
-          }}
-          className="bg-background text-lg font-semibold"
-          autoFocus
-          aria-label="Imię i nazwisko"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleSave()
-            if (e.key === "Escape") handleCancel()
-          }}
-        />
-        {error && <p className="text-sm text-destructive">{error}</p>}
-        <div className="flex gap-2">
-          <Button type="button" size="sm" onClick={handleSave} disabled={!draft.trim()}>
-            Zapisz
-          </Button>
-          <Button type="button" size="sm" variant="outline" onClick={handleCancel}>
-            Anuluj
-          </Button>
-        </div>
-      </div>
+      <Form {...form}>
+        <form onSubmit={handleSave} className="space-y-2">
+          <FormField
+            control={form.control}
+            name="displayName"
+            render={({ field }) => (
+              <FormItem>
+                <FormControl>
+                  <Input
+                    {...field}
+                    className="bg-background text-lg font-semibold"
+                    autoFocus
+                    aria-label="Imię i nazwisko"
+                    onKeyDown={(e) => {
+                      if (e.key === "Escape") handleCancel()
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" disabled={form.formState.isSubmitting}>
+              Zapisz
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={handleCancel}>
+              Anuluj
+            </Button>
+          </div>
+        </form>
+      </Form>
     )
   }
 
@@ -189,6 +199,7 @@ function EditableDisplayName({
           )}
           onClick={() => {
             setSaved(false)
+            form.reset({ displayName: value })
             setEditing(true)
           }}
           aria-label="Edytuj imię i nazwisko"

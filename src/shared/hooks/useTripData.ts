@@ -1,62 +1,48 @@
-import { useEffect, useState } from "react"
+import { useMemo } from "react"
 
-import type { DashboardStats, UserTrip } from "@/domain/models"
-import { TripService } from "@/domain/services"
+import { UserTrip } from "@/domain/models"
 import { buildTripMapLayers } from "@/features/map/tripMapUtils"
+import { useDashboardStatsQuery } from "@/shared/hooks/queries/useDashboardStatsQuery"
+import { useTripsQuery } from "@/shared/hooks/queries/useTripsQuery"
 
-type TripDataState = {
-  loading: boolean
-  error: string | null
-  activeTrip: UserTrip
-  journalTrips: UserTrip[]
-  tripMapLayers: ReturnType<typeof buildTripMapLayers>
-  stats: DashboardStats
-}
-
-const EMPTY_STATS = {
-  loading: true,
-  error: null,
-  activeTrip: TripService.getInstance().getActiveTrip(),
-  journalTrips: [] as UserTrip[],
-  tripMapLayers: [] as ReturnType<typeof buildTripMapLayers>,
-  stats: TripService.getInstance().getStats(),
-}
+const EMPTY_TRIP = new UserTrip(
+  "empty",
+  "empty",
+  "Brak podróży",
+  "",
+  "",
+  "",
+  [],
+  new Date(),
+  [],
+  [],
+  [],
+  null,
+  [],
+)
 
 export function useTripData() {
-  const [state, setState] = useState<TripDataState>(EMPTY_STATS)
+  const tripsQuery = useTripsQuery()
+  const statsQuery = useDashboardStatsQuery()
 
-  useEffect(() => {
-    let cancelled = false
+  const journalTrips = useMemo(
+    () => tripsQuery.data?.map((bundle) => bundle.trip) ?? [],
+    [tripsQuery.data],
+  )
 
-    ;(async () => {
-      try {
-        const service = TripService.getInstance()
-        await service.ensureLoaded()
-        if (cancelled) return
+  const tripMapLayers = useMemo(() => buildTripMapLayers(journalTrips), [journalTrips])
 
-        const journalTrips = service.getJournalTrips()
-        setState({
-          loading: false,
-          error: null,
-          activeTrip: service.getActiveTrip(),
-          journalTrips,
-          tripMapLayers: buildTripMapLayers(journalTrips),
-          stats: service.getStats(),
-        })
-      } catch (error) {
-        if (cancelled) return
-        setState((prev) => ({
-          ...prev,
-          loading: false,
-          error: error instanceof Error ? error.message : "Nie udało się załadować podróży.",
-        }))
-      }
-    })()
+  const errorMessage =
+    (tripsQuery.error instanceof Error ? tripsQuery.error.message : null) ??
+    (statsQuery.error instanceof Error ? statsQuery.error.message : null)
 
-    return () => {
-      cancelled = true
-    }
-  }, [])
-
-  return state
+  return {
+    loading: tripsQuery.isLoading || statsQuery.isLoading,
+    error: errorMessage,
+    activeTrip: journalTrips[0] ?? EMPTY_TRIP,
+    journalTrips,
+    tripBundles: tripsQuery.data ?? [],
+    tripMapLayers,
+    stats: statsQuery.data!,
+  }
 }

@@ -4,7 +4,7 @@ import type { UserTrip } from "@/domain/models"
 import { toLatLngTuple } from "@/domain/models/GeoPosition"
 import { GlobalMap } from "@/features/map/components/GlobalMap"
 import { DEFAULT_MAP_STYLE_ID } from "@/features/map/mapStyles"
-import { buildTripMapLayers, collectAllPositions } from "@/features/map/tripMapUtils"
+import { buildTripMapLayers, collectStopPositions } from "@/features/map/tripMapUtils"
 import { useBusRouteLayers } from "@/shared/hooks/useBusRouteLayers"
 
 type ScheduleTripMapProps = {
@@ -20,7 +20,7 @@ export function ScheduleTripMap({ trip, focusedStopId }: ScheduleTripMapProps) {
 
   const focusPositions = useMemo(() => {
     if (!focusedStopId) {
-      return collectAllPositions(routeLayers).map((position) => toLatLngTuple(position))
+      return collectStopPositions(baseLayers).map((position) => toLatLngTuple(position))
     }
 
     const stop = trip.scheduleStops.find((item) => item.id === focusedStopId)
@@ -28,8 +28,8 @@ export function ScheduleTripMap({ trip, focusedStopId }: ScheduleTripMapProps) {
       return [toLatLngTuple(stop.position)]
     }
 
-    return collectAllPositions(routeLayers).map((position) => toLatLngTuple(position))
-  }, [focusedStopId, routeLayers, trip.scheduleStops])
+    return collectStopPositions(baseLayers).map((position) => toLatLngTuple(position))
+  }, [baseLayers, focusedStopId, trip.scheduleStops])
 
   const focusKey = focusedStopId ?? `route-${trip.id}`
 

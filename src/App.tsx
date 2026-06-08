@@ -2,6 +2,7 @@ import { lazy, Suspense } from "react"
 import { BrowserRouter, Navigate, Route, Routes, useParams } from "react-router-dom"
 
 import { AuthPage } from "@/features/auth/AuthPage"
+import { OAuthCallbackPage } from "@/features/auth/OAuthCallbackPage"
 import { PlannerRoutes } from "@/features/planner/PlannerRoutes"
 import { RoutesPage } from "@/features/routes/RoutesPage"
 import { SettingsPage } from "@/features/settings/SettingsPage"
@@ -24,6 +25,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
+        <Route path="/auth/callback/github" element={<OAuthCallbackPage />} />
         <Route element={<ProtectedRoute />}>
           <Route element={<AppShell />}>
             <Route index element={<Navigate to="/trasy" replace />} />

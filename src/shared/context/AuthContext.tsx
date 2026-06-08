@@ -11,12 +11,16 @@ import {
 
 import type { AuthSession } from "@/domain/models/AuthSession"
 import { AuthService } from "@/domain/services"
+import { queryKeys } from "@/shared/api/queryKeys"
+import { queryClient } from "@/shared/lib/queryClient"
 
 type AuthContextValue = {
   session: AuthSession | null
   isAuthenticated: boolean
   isReady: boolean
   login: (email: string, password: string) => Promise<void>
+  loginWithGoogle: (idToken: string) => Promise<void>
+  loginWithGithub: (code: string) => Promise<void>
   register: (displayName: string, email: string, password: string) => Promise<void>
   logout: () => void
   updateDisplayName: (displayName: string) => Promise<void>
@@ -57,21 +61,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
   }, [])
 
-  const login = useCallback(async (email: string, password: string) => {
-    await AuthService.getInstance().login(email, password)
+  const refreshSessionData = useCallback(async () => {
+    await queryClient.invalidateQueries({ queryKey: queryKeys.trips.all })
+    await queryClient.invalidateQueries({ queryKey: queryKeys.stats.all })
     notify()
   }, [])
+
+  const login = useCallback(async (email: string, password: string) => {
+    await AuthService.getInstance().login(email, password)
+    await refreshSessionData()
+  }, [refreshSessionData])
+
+  const loginWithGoogle = useCallback(async (idToken: string) => {
+    await AuthService.getInstance().loginWithGoogle(idToken)
+    await refreshSessionData()
+  }, [refreshSessionData])
+
+  const loginWithGithub = useCallback(async (code: string) => {
+    await AuthService.getInstance().loginWithGithub(code)
+    await refreshSessionData()
+  }, [refreshSessionData])
 
   const register = useCallback(
     async (displayName: string, email: string, password: string) => {
       await AuthService.getInstance().register(displayName, email, password)
-      notify()
+      await refreshSessionData()
     },
-    [],
+    [refreshSessionData],
   )
 
   const logout = useCallback(() => {
     AuthService.getInstance().logout()
+    queryClient.clear()
     notify()
   }, [])
 
@@ -86,11 +107,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isAuthenticated: session !== null,
       isReady,
       login,
+      loginWithGoogle,
+      loginWithGithub,
       register,
       logout,
       updateDisplayName,
     }),
-    [session, isReady, login, register, logout, updateDisplayName],
+    [session, isReady, login, loginWithGoogle, loginWithGithub, register, logout, updateDisplayName],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -5,15 +5,16 @@ import { GlobalMap } from "@/features/map/components/GlobalMap"
 import { MapStyleSwitcher } from "@/features/map/components/MapStyleSwitcher"
 import { MapTripList } from "@/features/map/components/MapTripList"
 import { DEFAULT_MAP_STYLE_ID, type MapStyleId } from "@/features/map/mapStyles"
-import { collectAllPositions } from "@/features/map/tripMapUtils"
+import { collectStopPositions } from "@/features/map/tripMapUtils"
 import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { TripNameSearch } from "@/shared/components/TripNameSearch"
 import { useBusRouteLayers } from "@/shared/hooks/useBusRouteLayers"
 import { useTripData } from "@/shared/hooks/useTripData"
 import { filterTripsByName } from "@/shared/lib/tripSearch"
+import { computeTotalKilometers } from "@/shared/lib/tripStats"
 
 export function GlobalMapPage() {
-  const { tripMapLayers, journalTrips, stats, loading, error } = useTripData()
+  const { tripMapLayers, journalTrips, tripBundles, loading, error } = useTripData()
   const { layers: routeLayers, status: routeStatus } = useBusRouteLayers(tripMapLayers)
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
   const [mapStyleId, setMapStyleId] = useState<MapStyleId>(DEFAULT_MAP_STYLE_ID)
@@ -41,19 +42,22 @@ export function GlobalMapPage() {
   }, [filteredTripIds, selectedTripId])
 
   const focusPositions = useMemo(() => {
-    if (!selectedTripId) {
-      return collectAllPositions(filteredLayers).map((position) => toLatLngTuple(position))
-    }
+    const layersForFocus = selectedTripId
+      ? tripMapLayers.filter((layer) => layer.tripId === selectedTripId)
+      : tripMapLayers.filter((layer) => filteredTripIds.has(layer.tripId))
 
-    const layer = filteredLayers.find((item) => item.tripId === selectedTripId)
-    if (!layer) {
-      return collectAllPositions(filteredLayers).map((position) => toLatLngTuple(position))
-    }
-
-    return collectAllPositions([layer]).map((position) => toLatLngTuple(position))
-  }, [filteredLayers, selectedTripId])
+    return collectStopPositions(layersForFocus).map((position) => toLatLngTuple(position))
+  }, [filteredTripIds, selectedTripId, tripMapLayers])
 
   const focusKey = selectedTripId ?? "all"
+
+  const filteredTotalKilometers = useMemo(() => {
+    const connections = tripBundles
+      .filter((bundle) => filteredTripIds.has(bundle.trip.id))
+      .flatMap((bundle) => bundle.connections)
+
+    return computeTotalKilometers(connections)
+  }, [filteredTripIds, tripBundles])
 
   return (
     <PageLayout title="Mapa tras Flixbus">
@@ -108,7 +112,7 @@ export function GlobalMapPage() {
             selectedTripId={selectedTripId}
             onSelectTrip={setSelectedTripId}
             tripCount={filteredLayers.length}
-            totalKilometers={stats.totalKilometers}
+            totalKilometers={filteredTotalKilometers}
             emptyMessage={
               searchQuery.trim()
                 ? "Brak wycieczek pasujących do wyszukiwania."

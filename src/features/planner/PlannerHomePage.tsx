@@ -1,14 +1,17 @@
 import { Compass, MapPin, Plus } from "lucide-react"
-import { useCallback, useEffect, useState } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
+import { useEffect } from "react"
+import { Link, useNavigate } from "react-router-dom"
 
-import type { UserTrip } from "@/domain/models"
-
-import { TripService } from "@/domain/services"
+import { fetchPopularPlannerCities } from "@/features/planner/plannerLogistics"
+import { getPlannerLegs } from "@/domain/trips/tripLoader"
 import { Badge } from "@/shared/components/ui/badge"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { queryKeys } from "@/shared/api/queryKeys"
+import { useCreateTripMutation } from "@/shared/hooks/queries/useTripMutations"
+import { useTripsQuery } from "@/shared/hooks/queries/useTripsQuery"
+import { queryClient } from "@/shared/lib/queryClient"
 import { cn } from "@/shared/lib/utils"
 
 function formatLegCount(count: number): string {
@@ -20,41 +23,28 @@ function formatLegCount(count: number): string {
 
 export function PlannerHomePage() {
   const navigate = useNavigate()
-  const location = useLocation()
-  const service = TripService.getInstance()
-  const [draftTrips, setDraftTrips] = useState<UserTrip[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [creating, setCreating] = useState(false)
+  const tripsQuery = useTripsQuery()
+  const createTripMutation = useCreateTripMutation()
 
-  const loadTrips = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      await service.ensureLoaded()
-      setDraftTrips(service.getPlanningTrips())
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Nie udało się załadować podróży.")
-    } finally {
-      setLoading(false)
-    }
-  }, [service])
+  const error =
+    tripsQuery.error instanceof Error
+      ? tripsQuery.error.message
+      : createTripMutation.error instanceof Error
+        ? createTripMutation.error.message
+        : null
 
   useEffect(() => {
-    void loadTrips()
-  }, [loadTrips, location.key])
+    void queryClient.prefetchQuery({
+      queryKey: queryKeys.cities.popular(),
+      queryFn: () => fetchPopularPlannerCities(),
+      staleTime: 5 * 60_000,
+    })
+  }, [])
 
-  const handleCreateTrip = async () => {
-    setCreating(true)
-    setError(null)
-    try {
-      const trip = await service.createPlanningTrip()
-      navigate(`/planner/${trip.id}`)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Nie udało się utworzyć podróży.")
-    } finally {
-      setCreating(false)
-    }
+  const handleCreateTrip = () => {
+    createTripMutation.mutate(undefined, {
+      onSuccess: (bundle) => navigate(`/planner/${bundle.trip.id}`),
+    })
   }
 
   return (
@@ -72,8 +62,8 @@ export function PlannerHomePage() {
 
           <button
             type="button"
-            onClick={() => void handleCreateTrip()}
-            disabled={creating}
+            onClick={handleCreateTrip}
+            disabled={createTripMutation.isPending}
             className={cn(
               "flex min-h-[168px] flex-col items-center justify-center gap-3 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-6 text-center transition-colors",
               "hover:border-primary hover:bg-primary/10 disabled:opacity-60",
@@ -84,7 +74,7 @@ export function PlannerHomePage() {
             </div>
             <div>
               <p className="font-semibold">
-                {creating ? "Tworzenie…" : "Stwórz nową podróż"}
+                {createTripMutation.isPending ? "Tworzenie…" : "Stwórz nową podróż"}
               </p>
               <p className="mt-1 text-xs text-muted-foreground">
                 Pusta trasa — dodasz przystanki krok po kroku
@@ -92,46 +82,49 @@ export function PlannerHomePage() {
             </div>
           </button>
 
-          {loading && (
+          {tripsQuery.isLoading && (
             <p className="col-span-full text-sm text-muted-foreground">Ładowanie podróży…</p>
           )}
 
-          {!loading &&
-            draftTrips.map((trip) => {
-              const legCount = service.getPlannerLegs(trip.id).length
-              return (
-                <Link
-                  key={trip.id}
-                  to={`/planner/${trip.id}`}
-                  className="group block min-h-[168px] rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <Card className="h-full overflow-hidden py-0 transition-shadow group-hover:shadow-md">
-                    <div
-                      className="h-20 bg-cover bg-center"
-                      style={{ backgroundImage: `url(${trip.heroImageUrl})` }}
-                    />
-                    <CardContent className="space-y-2 py-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="line-clamp-2 font-semibold leading-tight">{trip.name}</p>
-                        <Compass className="size-4 shrink-0 text-primary" aria-hidden />
-                      </div>
-                      <p className="line-clamp-2 text-xs text-muted-foreground">
-                        {trip.description}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-2 pt-1">
-                        <Badge variant="secondary" className="gap-1 text-[10px]">
-                          <MapPin className="size-3" aria-hidden />
-                          {formatLegCount(legCount)}
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px]">
-                          W planowaniu
-                        </Badge>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
-              )
-            })}
+          {!tripsQuery.isLoading &&
+            tripsQuery.data
+              ?.filter((bundle) => !bundle.trip.isFinalized)
+              .map((bundle) => {
+                const legCount = getPlannerLegs(bundle.trip.id, bundle.connections).length
+                const trip = bundle.trip
+                return (
+                  <Link
+                    key={trip.id}
+                    to={`/planner/${trip.id}`}
+                    className="group block min-h-[168px] rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  >
+                    <Card className="h-full overflow-hidden py-0 transition-shadow group-hover:shadow-md">
+                      <div
+                        className="h-20 bg-cover bg-center"
+                        style={{ backgroundImage: `url(${trip.heroImageUrl})` }}
+                      />
+                      <CardContent className="space-y-2 py-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="line-clamp-2 font-semibold leading-tight">{trip.name}</p>
+                          <Compass className="size-4 shrink-0 text-primary" aria-hidden />
+                        </div>
+                        <p className="line-clamp-2 text-xs text-muted-foreground">
+                          {trip.description}
+                        </p>
+                        <div className="flex flex-wrap items-center gap-2 pt-1">
+                          <Badge variant="secondary" className="gap-1 text-[10px]">
+                            <MapPin className="size-3" aria-hidden />
+                            {formatLegCount(legCount)}
+                          </Badge>
+                          <Badge variant="outline" className="text-[10px]">
+                            W planowaniu
+                          </Badge>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                )
+              })}
         </div>
       </ScrollArea>
     </PageLayout>

@@ -66,19 +66,24 @@ export function positionsToBounds(positions: LatLngTuple[]): MapboxBounds | null
   )
 }
 
-export function applyEuropeView(map: MapboxMap): void {
+export function applyEuropeView(map: MapboxMap, animate = true): void {
   map.fitBounds(EUROPE_VIEW_BOUNDS, {
     padding: { top: 24, bottom: 24, left: 24, right: 24 },
     maxZoom: 5,
-    duration: 600,
+    duration: animate ? 600 : 0,
   })
 }
 
-export function applyTripView(map: MapboxMap, bounds: MapboxBounds, maxZoom: number): void {
+export function applyTripView(
+  map: MapboxMap,
+  bounds: MapboxBounds,
+  maxZoom: number,
+  animate = true,
+): void {
   map.fitBounds(clampBoundsToEurope(bounds), {
     padding: { top: 48, bottom: 48, left: 48, right: 48 },
     maxZoom,
-    duration: 600,
+    duration: animate ? 600 : 0,
   })
 }
 
@@ -86,6 +91,7 @@ export function applyPointView(
   map: MapboxMap,
   [lat, lng]: LatLngTuple,
   zoom = 13,
+  animate = true,
 ): void {
   const [[eWest, eSouth], [eEast, eNorth]] = EUROPE_MAX_BOUNDS
   const clampedLng = Math.min(Math.max(lng, eWest), eEast)
@@ -94,6 +100,6 @@ export function applyPointView(
   map.flyTo({
     center: [clampedLng, clampedLat],
     zoom,
-    duration: 600,
+    duration: animate ? 600 : 0,
   })
 }

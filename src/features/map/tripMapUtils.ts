@@ -61,3 +61,8 @@ export function collectAllPositions(layers: TripMapLayer[]): GeoPosition[] {
     ...layer.stops.map((stop) => stop.position),
   ])
 }
+
+/** Pozycje przystanków — stabilne podczas ładowania geometrii trasy (kamera mapy). */
+export function collectStopPositions(layers: TripMapLayer[]): GeoPosition[] {
+  return layers.flatMap((layer) => layer.stops.map((stop) => stop.position))
+}

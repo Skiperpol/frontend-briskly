@@ -6,6 +6,7 @@ import { Label } from "@/shared/components/ui/label"
 type TimeInputFieldProps = {
   id: string
   label?: string
+  hideLabel?: boolean
   value: string
   onChange: (value: string) => void
 }
@@ -13,12 +14,13 @@ type TimeInputFieldProps = {
 export function TimeInputField({
   id,
   label = "Godzina",
+  hideLabel = false,
   value,
   onChange,
 }: TimeInputFieldProps) {
   return (
     <div className="space-y-1">
-      <Label htmlFor={id}>{label}</Label>
+      {!hideLabel && <Label htmlFor={id}>{label}</Label>}
       <div className="flex items-stretch gap-2">
         <Input
           id={id}

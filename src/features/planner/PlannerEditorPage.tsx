@@ -1,8 +1,8 @@
 import { ArrowLeft, Check, Plus } from "lucide-react"
-import { useCallback, useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom"
 
-import { TripService } from "@/domain/services"
+import { getPlannerLegs } from "@/domain/trips/tripLoader"
 import { PlannerMap } from "@/features/planner/components/PlannerMap"
 import {
   PlannerCurrentStopPreview,
@@ -28,6 +28,11 @@ import { Input } from "@/shared/components/ui/input"
 import { Label } from "@/shared/components/ui/label"
 import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { usePopularCitiesQuery } from "@/shared/hooks/queries/usePopularCitiesQuery"
+import {
+  useFinalizeTripMutation,
+  useSavePlannerLegsMutation,
+} from "@/shared/hooks/queries/useTripMutations"
 import { useTrip } from "@/shared/hooks/useTrip"
 import { cn } from "@/shared/lib/utils"
 
@@ -44,8 +49,11 @@ function createLegId(): string {
 export function PlannerEditorPage() {
   const { tripId } = useParams<{ tripId: string }>()
   const navigate = useNavigate()
-  const service = TripService.getInstance()
-  const { trip, loading: tripLoading } = useTrip(tripId)
+  const { trip, connections, loading: tripLoading } = useTrip(tripId)
+  const popularCitiesQuery = usePopularCitiesQuery()
+  const saveLegsMutation = useSavePlannerLegsMutation(tripId ?? "")
+  const finalizeMutation = useFinalizeTripMutation(tripId ?? "")
+  const legsInitializedFor = useRef<string | null>(null)
 
   const [routeLegs, setRouteLegs] = useState<PlannerRouteLeg[]>([])
   const [cityQuery, setCityQuery] = useState("")
@@ -59,29 +67,41 @@ export function PlannerEditorPage() {
   const [zoomStopId, setZoomStopId] = useState<string | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  const saving = saveLegsMutation.isPending || finalizeMutation.isPending
   const [recommendedItems, setRecommendedItems] = useState<
     Awaited<ReturnType<typeof fetchRecommendedStops>>
   >([])
 
   useEffect(() => {
-    if (!tripId || !trip || trip.isFinalized) return
-    setRouteLegs(service.getPlannerLegs(tripId))
-  }, [service, trip, tripId])
+    legsInitializedFor.current = null
+  }, [tripId])
 
   useEffect(() => {
+    if (!tripId || !trip || trip.isFinalized || tripLoading) return
+    if (legsInitializedFor.current === tripId) return
+    setRouteLegs(getPlannerLegs(tripId, connections))
+    legsInitializedFor.current = tripId
+  }, [connections, trip, tripId, tripLoading])
+
+  useEffect(() => {
+    const trimmed = cityQuery.trim()
+    if (trimmed.length < 2) {
+      setCityResults(popularCitiesQuery.data ?? [])
+      return
+    }
+
     let cancelled = false
     const timer = window.setTimeout(() => {
-      void fetchPlannerCities(cityQuery).then((cities) => {
+      void fetchPlannerCities(trimmed).then((cities) => {
         if (!cancelled) setCityResults(cities)
       })
-    }, cityQuery.trim().length < 2 ? 0 : 300)
+    }, 300)
 
     return () => {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [cityQuery])
+  }, [cityQuery, popularCitiesQuery.data])
 
   useEffect(() => {
     if (!selectedCity) {
@@ -121,19 +141,16 @@ export function PlannerEditorPage() {
   }, [lastLeg, routeLegs])
 
   const persistLegs = useCallback(
-    async (legs: PlannerRouteLeg[]) => {
+    (legs: PlannerRouteLeg[]) => {
       if (!tripId) return
-      setSaving(true)
       setSaveError(null)
-      try {
-        await service.savePlannerLegs(tripId, legs)
-      } catch (err) {
-        setSaveError(err instanceof Error ? err.message : "Nie udało się zapisać trasy.")
-      } finally {
-        setSaving(false)
-      }
+      saveLegsMutation.mutate(legs, {
+        onError: (err) => {
+          setSaveError(err instanceof Error ? err.message : "Nie udało się zapisać trasy.")
+        },
+      })
     },
-    [service, tripId],
+    [saveLegsMutation, tripId],
   )
 
   const stopById = useMemo(() => {
@@ -224,21 +241,20 @@ export function PlannerEditorPage() {
     void persistLegs(nextLegs)
   }
 
-  const handleFinalize = async () => {
+  const handleFinalize = () => {
     if (!tripId) return
-    setSaving(true)
     setSaveError(null)
-    try {
-      const ok = await service.finalizeTrip(tripId)
-      setConfirmOpen(false)
-      if (ok) {
-        navigate(tripSchedulePath(tripId))
-      }
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : "Nie udało się zatwierdzić trasy.")
-    } finally {
-      setSaving(false)
-    }
+    finalizeMutation.mutate(undefined, {
+      onSuccess: (ok) => {
+        setConfirmOpen(false)
+        if (ok) {
+          navigate(tripSchedulePath(tripId))
+        }
+      },
+      onError: (err) => {
+        setSaveError(err instanceof Error ? err.message : "Nie udało się zatwierdzić trasy.")
+      },
+    })
   }
 
   if (tripLoading) {
@@ -341,6 +357,11 @@ export function PlannerEditorPage() {
                   />
                   {cityResults.length > 0 && !selectedCity && (
                     <ul className="max-h-40 overflow-y-auto rounded-md border border-border">
+                      {cityQuery.trim().length < 2 && (
+                        <li className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Popularne miasta
+                        </li>
+                      )}
                       {cityResults.map((city) => (
                         <li key={city.id}>
                           <button
@@ -478,7 +499,7 @@ export function PlannerEditorPage() {
         description="Czy na pewno chcesz zatwierdzić trasę? Po zatwierdzeniu nie będzie można jej edytować w planowaniu."
         confirmLabel="Zatwierdź trasę"
         cancelLabel="Kontynuuj planowanie"
-        onConfirm={() => void handleFinalize()}
+        onConfirm={handleFinalize}
         onCancel={() => setConfirmOpen(false)}
       />
     </PageLayout>

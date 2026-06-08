@@ -3,7 +3,6 @@ import { useMemo, useState } from "react"
 import { toLatLngTuple } from "@/domain/models/GeoPosition"
 import { GlobalMap } from "@/features/map/components/GlobalMap"
 import { DEFAULT_MAP_STYLE_ID } from "@/features/map/mapStyles"
-import { collectAllPositions } from "@/features/map/tripMapUtils"
 import {
   buildPickerMapLayer,
   buildPreviewMapLayer,
@@ -122,9 +121,7 @@ export function PlannerMap({
     }
 
     if (routeLegs.length > 0) {
-      const fromRoute = collectAllPositions(routedLayers).map((position) =>
-        toLatLngTuple(position),
-      )
+      const fromRoute = routeLegs.map((leg) => toLatLngTuple(leg.position))
       if (fromRoute.length > 0) return fromRoute
     }
 
@@ -142,8 +139,7 @@ export function PlannerMap({
     cityCenter,
     lastLeg,
     pickerStops,
-    routeLegs.length,
-    routedLayers,
+    routeLegs,
     zoomPath,
     zoomPathReady,
     zoomStopId,

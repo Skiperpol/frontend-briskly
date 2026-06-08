@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 
 import { fetchRoadRoute } from "@/features/map/mapDirections"
 import { getMapboxAccessToken } from "@/features/map/mapboxConfig"
@@ -7,6 +7,15 @@ import type { TripMapLayer } from "@/features/map/tripMapUtils"
 export type BusRouteStatus = "idle" | "loading" | "ready" | "error"
 
 const ROUTE_TIMEOUT_MS = 25_000
+
+function buildLayersKey(layers: TripMapLayer[]): string {
+  return layers
+    .map(
+      (layer) =>
+        `${layer.tripId}:${layer.stops.map((stop) => `${stop.id}@${stop.position.lat},${stop.position.lng}`).join(";")}`,
+    )
+    .join("|")
+}
 
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return new Promise((resolve) => {
@@ -24,20 +33,24 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 }
 
 export function useBusRouteLayers(baseLayers: TripMapLayer[]) {
+  const layersKey = useMemo(() => buildLayersKey(baseLayers), [baseLayers])
   const [layers, setLayers] = useState<TripMapLayer[]>(() =>
     baseLayers.map((layer) => ({ ...layer, path: [] })),
   )
   const [status, setStatus] = useState<BusRouteStatus>("idle")
   const runIdRef = useRef(0)
+  const baseLayersRef = useRef(baseLayers)
+  baseLayersRef.current = baseLayers
 
   useEffect(() => {
     const runId = ++runIdRef.current
     let cancelled = false
+    const currentBaseLayers = baseLayersRef.current
 
-    setLayers(baseLayers.map((layer) => ({ ...layer, path: [] })))
+    setLayers(currentBaseLayers.map((layer) => ({ ...layer, path: [] })))
 
     const loadRoutes = async () => {
-      if (baseLayers.length === 0) {
+      if (currentBaseLayers.length === 0) {
         setLayers([])
         setStatus("ready")
         return
@@ -52,28 +65,24 @@ export function useBusRouteLayers(baseLayers: TripMapLayer[]) {
       setStatus("loading")
 
       try {
-        for (const layer of baseLayers) {
-          if (cancelled || runId !== runIdRef.current) break
+        const routedLayers = await Promise.all(
+          currentBaseLayers.map(async (layer) => {
+            const stations = layer.stops.map((stop) => stop.position)
+            const roadPath = await withTimeout(
+              fetchRoadRoute(stations, token),
+              ROUTE_TIMEOUT_MS,
+              [],
+            )
 
-          const stations = layer.stops.map((stop) => stop.position)
-          const roadPath = await withTimeout(
-            fetchRoadRoute(stations, token),
-            ROUTE_TIMEOUT_MS,
-            [],
-          )
-
-          if (cancelled || runId !== runIdRef.current) break
-
-          setLayers((previous) =>
-            previous.map((item) =>
-              item.tripId === layer.tripId
-                ? { ...layer, path: roadPath.length >= 2 ? roadPath : [] }
-                : item,
-            ),
-          )
-        }
+            return {
+              ...layer,
+              path: roadPath.length >= 2 ? roadPath : [],
+            }
+          }),
+        )
 
         if (!cancelled && runId === runIdRef.current) {
+          setLayers(routedLayers)
           setStatus("ready")
         }
       } catch {
@@ -88,7 +97,7 @@ export function useBusRouteLayers(baseLayers: TripMapLayer[]) {
     return () => {
       cancelled = true
     }
-  }, [baseLayers])
+  }, [layersKey])
 
   return { layers, status }
 }

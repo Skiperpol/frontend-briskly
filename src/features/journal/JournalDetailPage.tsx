@@ -1,8 +1,9 @@
+import { zodResolver } from "@hookform/resolvers/zod"
 import { useEffect, useMemo, useState } from "react"
 import { Link, Navigate, useParams } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
+import { useForm } from "react-hook-form"
 
-import { TripService } from "@/domain/services"
 import { DraggableNoteTimeline } from "@/features/journal/components/DraggableNoteTimeline"
 import { EditableBlock } from "@/features/journal/components/EditableBlock"
 import { NewNoteForm } from "@/features/journal/components/NewNoteForm"
@@ -10,11 +11,26 @@ import { StopSelector } from "@/features/journal/components/StopSelector"
 import { notesForStop } from "@/features/journal/journalUtils"
 import type { EditableNote } from "@/features/journal/types"
 import { Button } from "@/shared/components/ui/button"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/shared/components/ui/form"
 import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { PageLayout } from "@/shared/components/layout/PageLayout"
+import {
+  useAddJournalNoteMutation,
+  useDeleteJournalNoteMutation,
+  useReorderJournalNotesMutation,
+  useUpdateJournalNoteMutation,
+  useUpdateTripMetadataMutation,
+} from "@/shared/hooks/queries/useTripMutations"
 import { useTrip } from "@/shared/hooks/useTrip"
+import { tripHeaderSchema, type TripHeaderFormValues } from "@/shared/schemas/journalSchemas"
 import { cn } from "@/shared/lib/utils"
 
 function formatTripDate(date: Date): string {
@@ -35,23 +51,34 @@ function fieldInputClassName() {
 
 export function JournalDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
-  const { trip, loading, reload } = useTrip(tripId)
-  const service = TripService.getInstance()
-
-  const [tripName, setTripName] = useState("")
-  const [description, setDescription] = useState("")
-  const [notes, setNotes] = useState<EditableNote[]>([])
+  const { trip, editableNotes, loading } = useTrip(tripId)
   const [selectedStopId, setSelectedStopId] = useState("")
-  const [saveError, setSaveError] = useState<string | null>(null)
-  const [saving, setSaving] = useState(false)
+  const [mutationError, setMutationError] = useState<string | null>(null)
+
+  const updateMetadataMutation = useUpdateTripMetadataMutation(tripId ?? "")
+  const addNoteMutation = useAddJournalNoteMutation(tripId ?? "")
+  const updateNoteMutation = useUpdateJournalNoteMutation(tripId ?? "")
+  const deleteNoteMutation = useDeleteJournalNoteMutation(tripId ?? "")
+  const reorderNotesMutation = useReorderJournalNotesMutation(tripId ?? "")
+
+  const headerForm = useForm<TripHeaderFormValues>({
+    resolver: zodResolver(tripHeaderSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+    },
+  })
 
   useEffect(() => {
-    if (!trip || !tripId) return
-    setTripName(trip.name)
-    setDescription(trip.description)
-    setNotes(service.getEditableJournalNotes(tripId))
-    setSelectedStopId(trip.scheduleStops[0]?.id ?? "")
-  }, [service, trip, tripId])
+    if (!trip) return
+    headerForm.reset({
+      name: trip.name,
+      description: trip.description,
+    })
+    setSelectedStopId((current) => current || trip.scheduleStops[0]?.id || "")
+  }, [headerForm, trip])
+
+  const notes = editableNotes
 
   const noteCountByStop = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -68,18 +95,12 @@ export function JournalDetailPage() {
 
   const selectedStop = trip?.scheduleStops.find((stop) => stop.id === selectedStopId)
 
-  const runMutation = async (action: () => Promise<void>) => {
-    setSaving(true)
-    setSaveError(null)
-    try {
-      await action()
-      reload()
-    } catch (error) {
-      setSaveError(error instanceof Error ? error.message : "Operacja nie powiodła się.")
-    } finally {
-      setSaving(false)
-    }
-  }
+  const saving =
+    updateMetadataMutation.isPending ||
+    addNoteMutation.isPending ||
+    updateNoteMutation.isPending ||
+    deleteNoteMutation.isPending ||
+    reorderNotesMutation.isPending
 
   if (loading) {
     return (
@@ -97,11 +118,13 @@ export function JournalDetailPage() {
 
   const defaultNoteDay = toIsoDay(trip.startDate)
 
-  const updateNote = (id: string, next: EditableNote) => {
-    void runMutation(async () => {
-      await service.updateJournalNote(tripId, next)
+  const updateNote = (_id: string, next: EditableNote) => {
+    setMutationError(null)
+    updateNoteMutation.mutate(next, {
+      onError: (error) => {
+        setMutationError(error instanceof Error ? error.message : "Nie udało się zapisać notatki.")
+      },
     })
-    setNotes((prev) => prev.map((note) => (note.id === id ? next : note)))
   }
 
   const deleteNote = (id: string) => {
@@ -114,29 +137,52 @@ export function JournalDetailPage() {
       }
     })
 
-    void runMutation(async () => {
-      await service.deleteJournalNote(tripId, note)
+    setMutationError(null)
+    deleteNoteMutation.mutate(note, {
+      onError: (error) => {
+        setMutationError(error instanceof Error ? error.message : "Nie udało się usunąć notatki.")
+      },
     })
-    setNotes((prev) => prev.filter((item) => item.id !== id))
   }
 
   const reorderStopNotes = (reordered: EditableNote[]) => {
-    setNotes((prev) => {
-      const other = prev.filter((note) => note.scheduleStopId !== selectedStopId)
-      return [...other, ...reordered]
-    })
-    void runMutation(async () => {
-      await service.reorderJournalNotes(tripId, selectedStopId, reordered)
-    })
+    setMutationError(null)
+    reorderNotesMutation.mutate(
+      { scheduleStopId: selectedStopId, reordered },
+      {
+        onError: (error) => {
+          setMutationError(
+            error instanceof Error ? error.message : "Nie udało się zmienić kolejności notatek.",
+          )
+        },
+      },
+    )
   }
 
   const addNote = (
     partial: Omit<EditableNote, "id" | "sortOrder" | "scheduleStopId" | "connectionId">,
   ) => {
-    void runMutation(async () => {
-      await service.addJournalNote(tripId, selectedStopId, partial)
-    })
+    setMutationError(null)
+    addNoteMutation.mutate(
+      { scheduleStopId: selectedStopId, partial },
+      {
+        onError: (error) => {
+          setMutationError(error instanceof Error ? error.message : "Nie udało się dodać notatki.")
+        },
+      },
+    )
   }
+
+  const saveHeader = headerForm.handleSubmit((values) => {
+    setMutationError(null)
+    updateMetadataMutation.mutate(values, {
+      onError: (error) => {
+        setMutationError(
+          error instanceof Error ? error.message : "Nie udało się zapisać nagłówka podróży.",
+        )
+      },
+    })
+  })
 
   return (
     <PageLayout
@@ -150,40 +196,60 @@ export function JournalDetailPage() {
       }
     >
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {saveError && (
+        {mutationError && (
           <p className="shrink-0 border-b border-destructive/20 bg-destructive/10 px-6 py-2 text-sm text-destructive">
-            {saveError}
+            {mutationError}
           </p>
         )}
 
         <EditableBlock
           className="shrink-0 border-b border-border px-6 py-5"
           editContent={
-            <TripHeaderEdit
-              name={tripName}
-              description={description}
-              onNameChange={setTripName}
-              onDescriptionChange={setDescription}
-            />
+            <Form {...headerForm}>
+              <form className="space-y-3" onSubmit={saveHeader}>
+                <FormField
+                  control={headerForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nazwa podróży</FormLabel>
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={headerForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Opis</FormLabel>
+                      <FormControl>
+                        <textarea
+                          {...field}
+                          className={cn(fieldInputClassName(), "min-h-[80px] resize-none")}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </form>
+            </Form>
           }
-          onSave={() => {
-            void runMutation(async () => {
-              const updated = await service.updateTripMetadata(tripId, {
-                name: tripName.trim(),
-                description: description.trim(),
-              })
-              setTripName(updated.name)
-              setDescription(updated.description)
-            })
-          }}
+          onSave={saveHeader}
           onCancel={() => {
-            setTripName(trip.name)
-            setDescription(trip.description)
+            headerForm.reset({
+              name: trip.name,
+              description: trip.description,
+            })
           }}
         >
           <div className="pr-28">
-            <h2 className="text-2xl font-bold">{tripName}</h2>
-            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</p>
+            <h2 className="text-2xl font-bold">{trip.name}</h2>
+            <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{trip.description}</p>
             <p className="mt-2 text-sm text-muted-foreground">
               {formatTripDate(trip.startDate)}
             </p>
@@ -242,39 +308,5 @@ export function JournalDetailPage() {
         </div>
       </div>
     </PageLayout>
-  )
-}
-
-function TripHeaderEdit({
-  name,
-  description,
-  onNameChange,
-  onDescriptionChange,
-}: {
-  name: string
-  description: string
-  onNameChange: (v: string) => void
-  onDescriptionChange: (v: string) => void
-}) {
-  return (
-    <div className="space-y-3">
-      <div className="space-y-1">
-        <Label htmlFor="trip-name">Nazwa podróży</Label>
-        <Input
-          id="trip-name"
-          value={name}
-          onChange={(e) => onNameChange(e.target.value)}
-        />
-      </div>
-      <div className="space-y-1">
-        <Label htmlFor="trip-desc">Opis</Label>
-        <textarea
-          id="trip-desc"
-          value={description}
-          onChange={(e) => onDescriptionChange(e.target.value)}
-          className={cn(fieldInputClassName(), "min-h-[80px] resize-none")}
-        />
-      </div>
-    </div>
   )
 }

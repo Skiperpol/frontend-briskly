@@ -1,11 +1,12 @@
 import { useState } from "react"
 import { Navigate, useLocation, useNavigate } from "react-router-dom"
-import { Compass, Mail } from "lucide-react"
+import { Compass } from "lucide-react"
 
 import { LoginForm } from "@/features/auth/components/LoginForm"
 import { RegisterForm } from "@/features/auth/components/RegisterForm"
+import { SocialLoginButtons } from "@/features/auth/components/SocialLoginButtons"
 import { useAuth } from "@/shared/context/AuthContext"
-import { Button } from "@/shared/components/ui/button"
+import { isAnyOAuthEnabled } from "@/shared/config/oauthConfig"
 import { cn } from "@/shared/lib/utils"
 
 type AuthTab = "login" | "register"
@@ -15,6 +16,7 @@ export function AuthPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const [tab, setTab] = useState<AuthTab>("login")
+  const [ssoError, setSsoError] = useState<string | null>(null)
 
   const redirectTo =
     (location.state as { from?: string } | null)?.from ?? "/trasy"
@@ -79,7 +81,10 @@ export function AuthPage() {
           <div className="mt-6 flex rounded-lg border border-border p-1">
             <button
               type="button"
-              onClick={() => setTab("login")}
+              onClick={() => {
+                setTab("login")
+                setSsoError(null)
+              }}
               className={cn(
                 "flex-1 rounded-md py-2 text-sm font-medium transition-colors",
                 tab === "login"
@@ -91,7 +96,10 @@ export function AuthPage() {
             </button>
             <button
               type="button"
-              onClick={() => setTab("register")}
+              onClick={() => {
+                setTab("register")
+                setSsoError(null)
+              }}
               className={cn(
                 "flex-1 rounded-md py-2 text-sm font-medium transition-colors",
                 tab === "register"
@@ -111,19 +119,30 @@ export function AuthPage() {
             )}
           </div>
 
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <span className="w-full border-t border-border" />
-            </div>
-            <div className="relative flex justify-center text-xs uppercase">
-              <span className="bg-background px-2 text-muted-foreground">lub</span>
-            </div>
-          </div>
+          {isAnyOAuthEnabled() && (
+            <>
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-border" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">lub</span>
+                </div>
+              </div>
 
-          <Button variant="outline" className="w-full gap-2" type="button" disabled>
-            <Mail className="size-4" />
-            Kontynuuj z Google (wkrótce)
-          </Button>
+              {ssoError && (
+                <p className="mb-3 rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                  {ssoError}
+                </p>
+              )}
+
+              <SocialLoginButtons
+                redirectTo={redirectTo}
+                onSuccess={handleSuccess}
+                onError={setSsoError}
+              />
+            </>
+          )}
         </div>
       </section>
     </div>

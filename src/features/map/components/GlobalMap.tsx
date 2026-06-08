@@ -60,7 +60,10 @@ export function GlobalMap({
     () => (selectableStopIds ? new Set(selectableStopIds) : null),
     [selectableStopIds],
   )
+  const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<MapRef>(null)
+  const lastCameraKeyRef = useRef<string | null>(null)
+  const hasAppliedCameraRef = useRef(false)
   const [mapReady, setMapReady] = useState(false)
   const [pulsePhase, setPulsePhase] = useState(0)
 
@@ -71,8 +74,42 @@ export function GlobalMap({
   const maxZoom = focusKey === "all" ? 5 : 14
   const mapStyle = getMapStyle(mapStyleId)
 
-  const routesGeoJson = useMemo(() => buildRoutesGeoJson(layers), [layers])
-  const stopsGeoJson = useMemo(() => buildStopsGeoJson(layers), [layers])
+  const routesSignature = useMemo(
+    () =>
+      layers
+        .map(
+          (layer) =>
+            `${layer.tripId}:${layer.path.length}:${layer.path
+              .map((point) => `${point.lat.toFixed(4)},${point.lng.toFixed(4)}`)
+              .join(";")}`,
+        )
+        .join("|"),
+    [layers],
+  )
+  const stopsSignature = useMemo(
+    () =>
+      layers
+        .map(
+          (layer) =>
+            `${layer.tripId}:${layer.stops
+              .map((stop) => `${stop.id}@${stop.position.lat},${stop.position.lng}`)
+              .join(";")}`,
+        )
+        .join("|"),
+    [layers],
+  )
+
+  const routesGeoJson = useMemo(() => buildRoutesGeoJson(layers), [routesSignature, layers])
+  const stopsGeoJson = useMemo(() => buildStopsGeoJson(layers), [stopsSignature, layers])
+  const focusPositionsKey = useMemo(
+    () =>
+      focusKey === "all"
+        ? "all"
+        : focusPositions
+            .map(([lat, lng]) => `${lat.toFixed(5)},${lng.toFixed(5)}`)
+            .join("|"),
+    [focusKey, focusPositions],
+  )
 
   useEffect(() => {
     if (!mapReady) return
@@ -80,33 +117,59 @@ export function GlobalMap({
     const map = mapRef.current?.getMap()
     if (!map) return
 
+    const cameraKey =
+      focusKey === "all"
+        ? "all"
+        : `${focusKey}::${focusPositionsKey}::${pointFocusZoom ?? ""}`
+
+    if (lastCameraKeyRef.current === cameraKey) return
+    lastCameraKeyRef.current = cameraKey
+
+    const animate = hasAppliedCameraRef.current
+    hasAppliedCameraRef.current = true
+
     if (focusKey === "all") {
-      applyEuropeView(map)
+      applyEuropeView(map, animate)
       return
     }
 
     if (focusPositions.length === 0) return
 
     if (focusPositions.length === 1) {
-      applyPointView(map, focusPositions[0], pointFocusZoom)
+      applyPointView(map, focusPositions[0], pointFocusZoom, animate)
       return
     }
 
     const bounds = positionsToBounds(focusPositions)
     if (bounds) {
-      applyTripView(map, bounds, maxZoom)
+      applyTripView(map, bounds, maxZoom, animate)
     }
-  }, [mapReady, focusKey, focusPositions, maxZoom, pointFocusZoom])
+  }, [mapReady, focusKey, focusPositions, focusPositionsKey, maxZoom, pointFocusZoom])
 
   useEffect(() => {
     if (!mapReady) return
 
     const map = mapRef.current?.getMap()
-    if (!map) return
+    const container = containerRef.current
+    if (!map || !container) return
 
-    const onResize = () => map.resize()
-    window.addEventListener("resize", onResize)
-    return () => window.removeEventListener("resize", onResize)
+    let frameId = 0
+    const scheduleResize = () => {
+      cancelAnimationFrame(frameId)
+      frameId = requestAnimationFrame(() => map.resize())
+    }
+
+    scheduleResize()
+
+    const resizeObserver = new ResizeObserver(scheduleResize)
+    resizeObserver.observe(container)
+    window.addEventListener("resize", scheduleResize)
+
+    return () => {
+      cancelAnimationFrame(frameId)
+      resizeObserver.disconnect()
+      window.removeEventListener("resize", scheduleResize)
+    }
   }, [mapReady])
 
   useEffect(() => {
@@ -168,6 +231,7 @@ export function GlobalMap({
   }
 
   return (
+    <div ref={containerRef} className="h-full w-full">
     <Map
       ref={mapRef}
       mapboxAccessToken={token}
@@ -185,7 +249,6 @@ export function GlobalMap({
         map?.setProjection("mercator")
         map?.setPitch(0)
         map?.setBearing(0)
-        map?.resize()
         setMapReady(true)
       }}
     >
@@ -266,5 +329,6 @@ export function GlobalMap({
         />
       </Source>
     </Map>
+    </div>
   )
 }

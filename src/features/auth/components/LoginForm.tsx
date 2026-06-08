@@ -1,11 +1,21 @@
-import { useState, type FormEvent } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { Loader2 } from "lucide-react"
+import { useState } from "react"
+import { useForm } from "react-hook-form"
 
 import { AuthError } from "@/domain/services"
 import { useAuth } from "@/shared/context/AuthContext"
 import { Button } from "@/shared/components/ui/button"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/shared/components/ui/form"
 import { Input } from "@/shared/components/ui/input"
-import { Label } from "@/shared/components/ui/label"
+import { loginSchema, type LoginFormValues } from "@/shared/schemas/authSchemas"
 
 type LoginFormProps = {
   onSuccess?: () => void
@@ -13,66 +23,83 @@ type LoginFormProps = {
 
 export function LoginForm({ onSuccess }: LoginFormProps) {
   const { login } = useAuth()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
 
-  async function handleSubmit(event: FormEvent) {
-    event.preventDefault()
+  const form = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: "",
+      password: "",
+    },
+  })
+
+  const loading = form.formState.isSubmitting
+
+  async function onSubmit(values: LoginFormValues) {
     setError(null)
-    setLoading(true)
-
     try {
-      await login(email, password)
+      await login(values.email, values.password)
       onSuccess?.()
     } catch (err) {
       setError(err instanceof AuthError ? err.message : "Logowanie nie powiodło się.")
-    } finally {
-      setLoading(false)
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="login-email">E-mail</Label>
-        <Input
-          id="login-email"
-          type="email"
-          autoComplete="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="twoj@email.pl"
-          required
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="email"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>E-mail</FormLabel>
+              <FormControl>
+                <Input
+                  type="email"
+                  autoComplete="email"
+                  placeholder="twoj@email.pl"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="login-password">Hasło</Label>
-        <Input
-          id="login-password"
-          type="password"
-          autoComplete="current-password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          placeholder="••••••••"
-          required
+
+        <FormField
+          control={form.control}
+          name="password"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Hasło</FormLabel>
+              <FormControl>
+                <Input
+                  type="password"
+                  autoComplete="current-password"
+                  placeholder="••••••••"
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
 
-      {error && (
-        <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
-          {error}
-        </p>
-      )}
+        {error && (
+          <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            {error}
+          </p>
+        )}
 
-      <Button type="submit" className="w-full" disabled={loading}>
-        {loading ? <Loader2 className="animate-spin" /> : "Zaloguj się"}
-      </Button>
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? <Loader2 className="animate-spin" /> : "Zaloguj się"}
+        </Button>
 
       <p className="text-center text-xs text-muted-foreground">
-        Użyj loginu i hasła z konta Django (pole e-mail = username).
+        Zaloguj się adresem e-mail i hasłem z konta Briskly.
       </p>
-    </form>
+      </form>
+    </Form>
   )
 }
