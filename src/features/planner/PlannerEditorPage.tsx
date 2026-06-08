@@ -66,7 +66,7 @@ export function PlannerEditorPage() {
 
   const [routeLegs, setRouteLegs] = useState<PlannerRouteLeg[]>([])
   const [cityQuery, setCityQuery] = useState("")
-  const [cityResults, setCityResults] = useState<PlannerCity[]>([])
+  const [searchedCityResults, setSearchedCityResults] = useState<PlannerCity[]>([])
   const [selectedCity, setSelectedCity] = useState<PlannerCity | null>(null)
   const [pickerStops, setPickerStops] = useState<PlannerDepartureStop[]>([])
   const [departureDate, setDepartureDate] = useState("")
@@ -85,7 +85,10 @@ export function PlannerEditorPage() {
   const [connectionsLoading, setConnectionsLoading] = useState(false)
   const [connectionsError, setConnectionsError] = useState<string | null>(null)
   const [destinationCityQuery, setDestinationCityQuery] = useState("")
-  const [destinationCityResults, setDestinationCityResults] = useState<PlannerCity[]>([])
+  const [searchedDestinationCityResults, setSearchedDestinationCityResults] = useState<
+    PlannerCity[]
+  >([])
+  const [readyAnchorLegId, setReadyAnchorLegId] = useState<string | null>(null)
   const [selectedDestinationCity, setSelectedDestinationCity] = useState<PlannerCity | null>(null)
 
   useEffect(() => {
@@ -99,17 +102,24 @@ export function PlannerEditorPage() {
     legsInitializedFor.current = tripId
   }, [connections, trip, tripId, tripLoading])
 
+  const cityResults = useMemo(() => {
+    if (cityQuery.trim().length < 2) return popularCitiesQuery.data ?? []
+    return searchedCityResults
+  }, [cityQuery, popularCitiesQuery.data, searchedCityResults])
+
+  const destinationCityResults = useMemo(() => {
+    if (destinationCityQuery.trim().length < 2) return popularCitiesQuery.data ?? []
+    return searchedDestinationCityResults
+  }, [destinationCityQuery, popularCitiesQuery.data, searchedDestinationCityResults])
+
   useEffect(() => {
     const trimmed = cityQuery.trim()
-    if (trimmed.length < 2) {
-      setCityResults(popularCitiesQuery.data ?? [])
-      return
-    }
+    if (trimmed.length < 2) return
 
     let cancelled = false
     const timer = window.setTimeout(() => {
       void fetchPlannerCities(trimmed).then((cities) => {
-        if (!cancelled) setCityResults(cities)
+        if (!cancelled) setSearchedCityResults(cities)
       })
     }, 300)
 
@@ -117,19 +127,16 @@ export function PlannerEditorPage() {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [cityQuery, popularCitiesQuery.data])
+  }, [cityQuery])
 
   useEffect(() => {
     const trimmed = destinationCityQuery.trim()
-    if (trimmed.length < 2) {
-      setDestinationCityResults(popularCitiesQuery.data ?? [])
-      return
-    }
+    if (trimmed.length < 2) return
 
     let cancelled = false
     const timer = window.setTimeout(() => {
       void fetchPlannerCities(trimmed).then((cities) => {
-        if (!cancelled) setDestinationCityResults(cities)
+        if (!cancelled) setSearchedDestinationCityResults(cities)
       })
     }, 300)
 
@@ -137,13 +144,10 @@ export function PlannerEditorPage() {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [destinationCityQuery, popularCitiesQuery.data])
+  }, [destinationCityQuery])
 
   useEffect(() => {
-    if (!selectedCity) {
-      setPickerStops([])
-      return
-    }
+    if (!selectedCity) return
 
     let cancelled = false
     void fetchStopsForCity(selectedCity.id, selectedCity.label).then((stops) => {
@@ -153,34 +157,29 @@ export function PlannerEditorPage() {
     return () => {
       cancelled = true
     }
-  }, [selectedCity?.id, selectedCity?.label])
+  }, [selectedCity])
 
   const lastLeg = routeLegs.length > 0 ? routeLegs[routeLegs.length - 1] : null
   const isFirstLeg = routeLegs.length === 0
 
-  useEffect(() => {
-    if (!lastLeg) {
-      setReadyDate("")
-      setReadyTime("")
-      return
-    }
+  if (lastLeg?.id !== readyAnchorLegId) {
+    setReadyAnchorLegId(lastLeg?.id ?? null)
+    setReadyDate(lastLeg?.date ?? "")
+    setReadyTime(lastLeg?.time ?? "")
+  }
 
-    setReadyDate(lastLeg.date)
-    setReadyTime(lastLeg.time)
-  }, [lastLeg?.id, lastLeg?.date, lastLeg?.time])
+  const canSearchConnections = Boolean(lastLeg && readyDate && readyTime)
 
   useEffect(() => {
-    if (!lastLeg || !readyDate || !readyTime) {
-      setConnectionOptions([])
-      setConnectionsError(null)
-      return
-    }
+    if (!canSearchConnections || !lastLeg) return
 
     let cancelled = false
-    setConnectionsLoading(true)
-    setConnectionsError(null)
 
     const timer = window.setTimeout(() => {
+      if (cancelled) return
+      setConnectionsLoading(true)
+      setConnectionsError(null)
+
       void fetchConnectionsFromStop(
         lastLeg,
         readyDate,
@@ -208,13 +207,12 @@ export function PlannerEditorPage() {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [lastLeg, readyDate, readyTime, waitingMinutes, routeLegs])
+  }, [canSearchConnections, lastLeg, readyDate, readyTime, waitingMinutes, routeLegs])
 
-  const visibleConnectionOptions = useMemo(
-    () =>
-      filterAndSortConnections(connectionOptions, selectedDestinationCity?.id ?? null),
-    [connectionOptions, selectedDestinationCity?.id],
-  )
+  const visibleConnectionOptions = useMemo(() => {
+    if (!canSearchConnections) return []
+    return filterAndSortConnections(connectionOptions, selectedDestinationCity?.id ?? null)
+  }, [canSearchConnections, connectionOptions, selectedDestinationCity?.id])
 
   const persistLegs = useCallback(
     (legs: PlannerRouteLeg[]) => {
@@ -241,25 +239,28 @@ export function PlannerEditorPage() {
     [visibleConnectionOptions],
   )
 
+  const activePickerStops = useMemo(
+    () => (selectedCity ? pickerStops : []),
+    [pickerStops, selectedCity],
+  )
+
   const stopById = useMemo(() => {
     const map = new Map<string, PlannerDepartureStop>()
-    for (const stop of pickerStops) map.set(stop.id, stop)
+    for (const stop of activePickerStops) map.set(stop.id, stop)
     for (const stop of connectionStops) map.set(stop.id, stop)
     for (const leg of routeLegs) map.set(leg.stopId, legToDepartureStop(leg))
     return map
-  }, [connectionStops, pickerStops, routeLegs])
+  }, [activePickerStops, connectionStops, routeLegs])
 
   const canPickStop = Boolean(selectedCity && departureDate && departureTime)
-  const canAddLeg = canPickStop && selectedStopId !== null
+  const effectiveSelectedStopId =
+    selectedStopId && stopById.has(selectedStopId) ? selectedStopId : null
+  const canAddLeg = canPickStop && effectiveSelectedStopId !== null
   const canFinalize = routeLegs.length >= MIN_STOPS_TO_FINALIZE && !saving
 
-  useEffect(() => {
-    if (selectedStopId && !stopById.has(selectedStopId)) {
-      setSelectedStopId(null)
-    }
-  }, [selectedStopId, stopById])
-
-  const selectedStop = selectedStopId ? stopById.get(selectedStopId) : undefined
+  const selectedStop = effectiveSelectedStopId
+    ? stopById.get(effectiveSelectedStopId)
+    : undefined
 
   const handleSelectConnection = useCallback(
     (option: PlannerConnectionOption) => {
@@ -287,7 +288,7 @@ export function PlannerEditorPage() {
   const handleStopSelectFromMap = useCallback(
     (stopId: string) => {
       if (isFirstLeg) {
-        if (canPickStop && pickerStops.some((item) => item.id === stopId)) {
+        if (canPickStop && activePickerStops.some((item) => item.id === stopId)) {
           setSelectedStopId(stopId)
         }
         return
@@ -302,7 +303,7 @@ export function PlannerEditorPage() {
       canPickStop,
       handleSelectConnection,
       isFirstLeg,
-      pickerStops,
+      activePickerStops,
       visibleConnectionOptions,
     ],
   )
@@ -501,7 +502,7 @@ export function PlannerEditorPage() {
                                 onClick={() => {
                                   setSelectedCity(city)
                                   setCityQuery(city.label)
-                                  setCityResults([])
+                                  setSearchedCityResults([])
                                 }}
                               >
                                 {city.label}
@@ -559,7 +560,7 @@ export function PlannerEditorPage() {
                         id="planner-stop"
                         className={selectClassName}
                         value={selectedStopId ?? ""}
-                        disabled={!canPickStop || pickerStops.length === 0}
+                        disabled={!canPickStop || activePickerStops.length === 0}
                         onChange={(event) => {
                           const value = event.target.value
                           const stopId = value.length > 0 ? value : null
@@ -569,12 +570,12 @@ export function PlannerEditorPage() {
                       >
                         <option value="">
                           {canPickStop
-                            ? pickerStops.length > 0
+                            ? activePickerStops.length > 0
                               ? "Wybierz przystanek…"
                               : "Ładowanie przystanków…"
                             : "Najpierw miasto, datę i godzinę"}
                         </option>
-                        {pickerStops.map((stop) => (
+                        {activePickerStops.map((stop) => (
                           <option key={stop.id} value={stop.id}>
                             {stop.name}
                           </option>
@@ -674,7 +675,7 @@ export function PlannerEditorPage() {
                                 onClick={() => {
                                   setSelectedDestinationCity(city)
                                   setDestinationCityQuery(city.label)
-                                  setDestinationCityResults([])
+                                  setSearchedDestinationCityResults([])
                                 }}
                               >
                                 {city.label}
@@ -734,8 +735,8 @@ export function PlannerEditorPage() {
 
                     <PlannerConnectionsList
                       items={visibleConnectionOptions}
-                      loading={connectionsLoading}
-                      error={connectionsError}
+                      loading={canSearchConnections && connectionsLoading}
+                      error={canSearchConnections ? connectionsError : null}
                       destinationCityLabel={selectedDestinationCity?.label ?? null}
                       onSelect={handleSelectConnection}
                       onHover={(option) => setHoveredStopId(option?.stopId ?? null)}
@@ -758,10 +759,10 @@ export function PlannerEditorPage() {
             departureDate={isFirstLeg ? departureDate : readyDate}
             departureTime={isFirstLeg ? departureTime : readyTime}
             routeLegs={routeLegs}
-            pickerStops={isFirstLeg ? pickerStops : []}
+            pickerStops={isFirstLeg ? activePickerStops : []}
             recommendedStops={isFirstLeg ? [] : connectionStops}
             stopById={stopById}
-            selectedStopId={selectedStopId}
+            selectedStopId={effectiveSelectedStopId}
             hoveredStopId={hoveredStopId}
             zoomStopId={zoomStopId}
             onStopSelect={handleStopSelectFromMap}

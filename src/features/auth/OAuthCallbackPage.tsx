@@ -7,45 +7,51 @@ import { consumeGithubOAuthState } from "@/shared/config/oauthConfig"
 import { useAuth } from "@/shared/context/AuthContext"
 import { Button } from "@/shared/components/ui/button"
 
+function getProviderError(searchParams: URLSearchParams): string | null {
+  const providerError = searchParams.get("error_description") ?? searchParams.get("error")
+  if (!providerError) return null
+  return decodeURIComponent(providerError)
+}
+
 export function OAuthCallbackPage() {
   const [searchParams] = useSearchParams()
   const navigate = useNavigate()
   const { loginWithGithub } = useAuth()
-  const [error, setError] = useState<string | null>(null)
+  const [asyncError, setAsyncError] = useState<string | null>(null)
   const startedRef = useRef(false)
 
+  const providerError = getProviderError(searchParams)
+  const code = searchParams.get("code")
+  const state = searchParams.get("state")
+  const missingAuthParams = !providerError && (!code || !state)
+
   useEffect(() => {
-    if (startedRef.current) return
+    if (providerError || missingAuthParams || startedRef.current) return
     startedRef.current = true
-
-    const code = searchParams.get("code")
-    const state = searchParams.get("state")
-    const providerError = searchParams.get("error_description") ?? searchParams.get("error")
-
-    if (providerError) {
-      setError(decodeURIComponent(providerError))
-      return
-    }
-
-    if (!code || !state) {
-      setError("Brak kodu autoryzacji GitHub.")
-      return
-    }
 
     const { state: savedState, redirectTo } = consumeGithubOAuthState()
     if (!savedState || state !== savedState) {
-      setError("Nieprawidłowy stan logowania. Spróbuj ponownie.")
+      void Promise.resolve().then(() => {
+        setAsyncError("Nieprawidłowy stan logowania. Spróbuj ponownie.")
+      })
       return
     }
 
-    loginWithGithub(code)
+    loginWithGithub(code!)
       .then(() => {
         navigate(redirectTo, { replace: true })
       })
       .catch((err) => {
-        setError(err instanceof AuthError ? err.message : "Logowanie przez GitHub nie powiodło się.")
+        setAsyncError(
+          err instanceof AuthError ? err.message : "Logowanie przez GitHub nie powiodło się.",
+        )
       })
-  }, [loginWithGithub, navigate, searchParams])
+  }, [code, loginWithGithub, missingAuthParams, navigate, providerError, state])
+
+  const error =
+    providerError ??
+    (missingAuthParams ? "Brak kodu autoryzacji GitHub." : null) ??
+    asyncError
 
   if (error) {
     return (

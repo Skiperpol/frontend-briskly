@@ -74,33 +74,8 @@ export function GlobalMap({
   const maxZoom = focusKey === "all" ? 5 : 14
   const mapStyle = getMapStyle(mapStyleId)
 
-  const routesSignature = useMemo(
-    () =>
-      layers
-        .map(
-          (layer) =>
-            `${layer.tripId}:${layer.path.length}:${layer.path
-              .map((point) => `${point.lat.toFixed(4)},${point.lng.toFixed(4)}`)
-              .join(";")}`,
-        )
-        .join("|"),
-    [layers],
-  )
-  const stopsSignature = useMemo(
-    () =>
-      layers
-        .map(
-          (layer) =>
-            `${layer.tripId}:${layer.stops
-              .map((stop) => `${stop.id}@${stop.position.lat},${stop.position.lng}`)
-              .join(";")}`,
-        )
-        .join("|"),
-    [layers],
-  )
-
-  const routesGeoJson = useMemo(() => buildRoutesGeoJson(layers), [routesSignature, layers])
-  const stopsGeoJson = useMemo(() => buildStopsGeoJson(layers), [stopsSignature, layers])
+  const routesGeoJson = useMemo(() => buildRoutesGeoJson(layers), [layers])
+  const stopsGeoJson = useMemo(() => buildStopsGeoJson(layers), [layers])
   const focusPositionsKey = useMemo(
     () =>
       focusKey === "all"

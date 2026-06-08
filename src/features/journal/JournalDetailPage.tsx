@@ -76,10 +76,11 @@ export function JournalDetailPage() {
       name: trip.name,
       description: trip.description,
     })
-    setSelectedStopId((current) => current || trip.scheduleStops[0]?.id || "")
   }, [headerForm, trip])
 
   const notes = editableNotes
+  const defaultStopId = trip?.scheduleStops[0]?.id ?? ""
+  const activeStopId = selectedStopId || defaultStopId
 
   const noteCountByStop = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -90,11 +91,11 @@ export function JournalDetailPage() {
   }, [notes])
 
   const stopNotes = useMemo(
-    () => (selectedStopId ? notesForStop(notes, selectedStopId) : []),
-    [notes, selectedStopId],
+    () => (activeStopId ? notesForStop(notes, activeStopId) : []),
+    [activeStopId, notes],
   )
 
-  const selectedStop = trip?.scheduleStops.find((stop) => stop.id === selectedStopId)
+  const selectedStop = trip?.scheduleStops.find((stop) => stop.id === activeStopId)
 
   const saving =
     updateMetadataMutation.isPending ||
@@ -149,7 +150,7 @@ export function JournalDetailPage() {
   const reorderStopNotes = (reordered: EditableNote[]) => {
     setMutationError(null)
     reorderNotesMutation.mutate(
-      { scheduleStopId: selectedStopId, reordered },
+      { scheduleStopId: activeStopId, reordered },
       {
         onError: (error) => {
           setMutationError(
@@ -165,7 +166,7 @@ export function JournalDetailPage() {
   ) => {
     setMutationError(null)
     addNoteMutation.mutate(
-      { scheduleStopId: selectedStopId, partial },
+      { scheduleStopId: activeStopId, partial },
       {
         onError: (error) => {
           setMutationError(error instanceof Error ? error.message : "Nie udało się dodać notatki.")
@@ -287,7 +288,7 @@ export function JournalDetailPage() {
               {trip.scheduleStops.length > 0 ? (
                 <StopSelector
                   stops={trip.scheduleStops}
-                  selectedStopId={selectedStopId}
+                  selectedStopId={activeStopId}
                   noteCountByStop={noteCountByStop}
                   onSelect={setSelectedStopId}
                 />
@@ -321,9 +322,9 @@ export function JournalDetailPage() {
               </div>
             </ScrollArea>
 
-            {selectedStopId && (
+            {activeStopId && (
               <NewNoteForm
-                key={selectedStopId}
+                key={activeStopId}
                 defaultDay={defaultNoteDay}
                 disabled={saving}
                 onAdd={addNote}

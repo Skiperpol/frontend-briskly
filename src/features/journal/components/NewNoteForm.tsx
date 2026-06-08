@@ -1,6 +1,6 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { Plus, X } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { useForm } from "react-hook-form"
 
 import { NotePhotoFields } from "@/features/journal/components/NotePhotoFields"
@@ -47,18 +47,6 @@ export function NewNoteForm({ defaultDay, onAdd, disabled }: NewNoteFormProps) {
       body: "",
     },
   })
-
-  useEffect(() => {
-    if (!open) {
-      form.reset({
-        day: defaultDay,
-        time: "",
-        title: "",
-        body: "",
-      })
-      setPhotos([])
-    }
-  }, [defaultDay, form, open])
 
   const reset = () => {
     form.reset({
@@ -196,7 +184,16 @@ export function NewNoteForm({ defaultDay, onAdd, disabled }: NewNoteFormProps) {
           type="button"
           className="w-full gap-2"
           disabled={disabled || open}
-          onClick={() => setOpen(true)}
+          onClick={() => {
+            form.reset({
+              day: defaultDay,
+              time: "",
+              title: "",
+              body: "",
+            })
+            setPhotos([])
+            setOpen(true)
+          }}
         >
           <Plus className="size-4" />
           Dodaj notatkę

@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useState } from "react"
+import { Fragment, useState } from "react"
 import { GripVertical } from "lucide-react"
 
 import { EditableBlock } from "@/features/journal/components/EditableBlock"
@@ -157,6 +157,7 @@ export function DraggableNoteTimeline({
               <GripVertical className="size-4" />
             </button>
             <NoteCard
+              key={`${note.id}-${note.sortOrder}-${note.title}-${note.body}`}
               note={note}
               onSave={(next) => onUpdate(note.id, next)}
               onDelete={() => onDelete(note.id)}
@@ -179,10 +180,6 @@ function NoteCard({
   onDelete: () => void
 }) {
   const [draft, setDraft] = useState(note)
-
-  useEffect(() => {
-    setDraft(note)
-  }, [note])
 
   return (
     <Card className="py-4">

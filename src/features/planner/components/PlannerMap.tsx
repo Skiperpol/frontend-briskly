@@ -109,7 +109,7 @@ export function PlannerMap({
     return [...ids]
   }, [pickerStops, recommendedStops, showRecommended])
 
-  const zoomPath = zoomPreviewLayers[0]?.path ?? []
+  const zoomPath = useMemo(() => zoomPreviewLayers[0]?.path ?? [], [zoomPreviewLayers])
   const zoomPathReady = zoomPath.length >= 2
 
   const focusPositions = useMemo(() => {

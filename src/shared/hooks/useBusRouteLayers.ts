@@ -39,17 +39,15 @@ export function useBusRouteLayers(baseLayers: TripMapLayer[]) {
   )
   const [status, setStatus] = useState<BusRouteStatus>("idle")
   const runIdRef = useRef(0)
-  const baseLayersRef = useRef(baseLayers)
-  baseLayersRef.current = baseLayers
 
   useEffect(() => {
     const runId = ++runIdRef.current
     let cancelled = false
-    const currentBaseLayers = baseLayersRef.current
-
-    setLayers(currentBaseLayers.map((layer) => ({ ...layer, path: [] })))
+    const currentBaseLayers = baseLayers
 
     const loadRoutes = async () => {
+      if (cancelled || runId !== runIdRef.current) return
+
       if (currentBaseLayers.length === 0) {
         setLayers([])
         setStatus("ready")
@@ -62,6 +60,7 @@ export function useBusRouteLayers(baseLayers: TripMapLayer[]) {
         return
       }
 
+      setLayers(currentBaseLayers.map((layer) => ({ ...layer, path: [] })))
       setStatus("loading")
 
       try {
@@ -92,12 +91,14 @@ export function useBusRouteLayers(baseLayers: TripMapLayer[]) {
       }
     }
 
-    void loadRoutes()
+    void Promise.resolve().then(() => {
+      void loadRoutes()
+    })
 
     return () => {
       cancelled = true
     }
-  }, [layersKey])
+  }, [baseLayers, layersKey])
 
   return { layers, status }
 }

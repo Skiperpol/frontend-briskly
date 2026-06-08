@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import { useMemo, useState } from "react"
 
 import { toLatLngTuple } from "@/domain/models/GeoPosition"
 import { GlobalMap } from "@/features/map/components/GlobalMap"
@@ -35,21 +35,18 @@ export function GlobalMapPage() {
     [filteredTripIds, routeLayers],
   )
 
-  useEffect(() => {
-    if (selectedTripId && !filteredTripIds.has(selectedTripId)) {
-      setSelectedTripId(null)
-    }
-  }, [filteredTripIds, selectedTripId])
+  const activeTripId =
+    selectedTripId && filteredTripIds.has(selectedTripId) ? selectedTripId : null
 
   const focusPositions = useMemo(() => {
-    const layersForFocus = selectedTripId
-      ? tripMapLayers.filter((layer) => layer.tripId === selectedTripId)
+    const layersForFocus = activeTripId
+      ? tripMapLayers.filter((layer) => layer.tripId === activeTripId)
       : tripMapLayers.filter((layer) => filteredTripIds.has(layer.tripId))
 
     return collectStopPositions(layersForFocus).map((position) => toLatLngTuple(position))
-  }, [filteredTripIds, selectedTripId, tripMapLayers])
+  }, [activeTripId, filteredTripIds, tripMapLayers])
 
-  const focusKey = selectedTripId ?? "all"
+  const focusKey = activeTripId ?? "all"
 
   const filteredTotalKilometers = useMemo(() => {
     const connections = tripBundles
@@ -109,7 +106,7 @@ export function GlobalMapPage() {
             className="mt-3 min-h-0 flex-1"
             layers={filteredLayers}
             trips={filteredTrips}
-            selectedTripId={selectedTripId}
+            selectedTripId={activeTripId}
             onSelectTrip={setSelectedTripId}
             tripCount={filteredLayers.length}
             totalKilometers={filteredTotalKilometers}
