@@ -72,6 +72,15 @@ export function notesForStop(notes: EditableNote[], stopId: string): EditableNot
   return sortNotes(notes.filter((note) => note.scheduleStopId === stopId))
 }
 
+export function buildJournalPdfFilename(tripName: string): string {
+  const cleaned = tripName
+    .replace(/[\\/:*?"<>|]+/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+  const label = cleaned.length > 0 ? cleaned : "Podróż"
+  return `Briskly - ${label}.pdf`
+}
+
 function triggerBlobDownload(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement("a")
@@ -81,9 +90,11 @@ function triggerBlobDownload(blob: Blob, filename: string): void {
   URL.revokeObjectURL(url)
 }
 
-export async function exportJournalTripPdf(trip: Pick<UserTrip, "id" | "slug">): Promise<void> {
+export async function exportJournalTripPdf(
+  trip: Pick<UserTrip, "id" | "name">,
+): Promise<void> {
   const blob = await downloadJournalPdf(trip.id)
-  triggerBlobDownload(blob, `${trip.slug}-dziennik.pdf`)
+  triggerBlobDownload(blob, buildJournalPdfFilename(trip.name))
 }
 
 export { stopIdToConnectionId }
