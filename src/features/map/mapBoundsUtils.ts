@@ -20,6 +20,14 @@ export const EUROPE_VIEW_BOUNDS: MapboxBounds = [
   [38, 66],
 ]
 
+/** Stały widok Europy — ten sam co initialViewState mapy (bez skoku fitBounds). */
+export const EUROPE_DEFAULT_VIEW = {
+  center: [15, 52] as [number, number],
+  zoom: 3.8,
+  pitch: 0,
+  bearing: 0,
+}
+
 export function expandBounds(bounds: MapboxBounds): MapboxBounds {
   const [[west, south], [east, north]] = bounds
   const centerLat = (south + north) / 2
@@ -67,10 +75,10 @@ export function positionsToBounds(positions: LatLngTuple[]): MapboxBounds | null
 }
 
 export function applyEuropeView(map: MapboxMap, animate = true): void {
-  map.fitBounds(EUROPE_VIEW_BOUNDS, {
-    padding: { top: 24, bottom: 24, left: 24, right: 24 },
-    maxZoom: 5,
-    duration: animate ? 600 : 0,
+  map.stop()
+  map.easeTo({
+    ...EUROPE_DEFAULT_VIEW,
+    duration: animate ? 700 : 0,
   })
 }
 
@@ -80,10 +88,12 @@ export function applyTripView(
   maxZoom: number,
   animate = true,
 ): void {
+  map.stop()
   map.fitBounds(clampBoundsToEurope(bounds), {
     padding: { top: 48, bottom: 48, left: 48, right: 48 },
     maxZoom,
     duration: animate ? 600 : 0,
+    linear: true,
   })
 }
 
@@ -97,9 +107,12 @@ export function applyPointView(
   const clampedLng = Math.min(Math.max(lng, eWest), eEast)
   const clampedLat = Math.min(Math.max(lat, eSouth), eNorth)
 
-  map.flyTo({
+  map.stop()
+  map.easeTo({
     center: [clampedLng, clampedLat],
     zoom,
+    pitch: 0,
+    bearing: 0,
     duration: animate ? 600 : 0,
   })
 }

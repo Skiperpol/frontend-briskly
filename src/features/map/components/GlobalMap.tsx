@@ -12,6 +12,7 @@ import {
   applyEuropeView,
   applyPointView,
   applyTripView,
+  EUROPE_DEFAULT_VIEW,
   EUROPE_MAX_BOUNDS,
   positionsToBounds,
 } from "@/features/map/mapBoundsUtils"
@@ -25,15 +26,15 @@ import "mapbox-gl/dist/mapbox-gl.css"
 
 /** Bez ruchu kamery (np. podczas filtrowania wyszukiwarką). */
 export const MAP_CAMERA_IDLE = "idle"
-/** Widok całej Europy — tylko przy starcie lub świadomym odznaczeniu trasy. */
+/** Widok całej Europy — start i po odznaczeniu trasy. */
 export const MAP_CAMERA_OVERVIEW = "overview"
 
 const EUROPE_INITIAL_VIEW = {
-  longitude: 15,
-  latitude: 52,
-  zoom: 3.8,
-  pitch: 0,
-  bearing: 0,
+  longitude: EUROPE_DEFAULT_VIEW.center[0],
+  latitude: EUROPE_DEFAULT_VIEW.center[1],
+  zoom: EUROPE_DEFAULT_VIEW.zoom,
+  pitch: EUROPE_DEFAULT_VIEW.pitch,
+  bearing: EUROPE_DEFAULT_VIEW.bearing,
 }
 
 type GlobalMapProps = {
