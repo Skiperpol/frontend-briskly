@@ -107,6 +107,15 @@ export type ApiStopDestinationConnection = {
   destination_city_id: string
 }
 
+export type ApiDestinationStopRef = {
+  stop_id: string
+  stop_name: string
+  lat: number
+  lon: number
+  city_id?: string | null
+  suburb?: string | null
+}
+
 export type ApiStopDestinationsResponse = {
   count: number
   search: {
@@ -122,7 +131,7 @@ export type ApiStopDestinationsResponse = {
     city_id: string
   }
   connections: ApiStopDestinationConnection[]
-  stops: Record<string, ApiStopRef & { suburb?: string }>
+  stops: Record<string, ApiDestinationStopRef>
   cities: Record<string, { city_id: string; city_name: string; region: string }>
 }
 

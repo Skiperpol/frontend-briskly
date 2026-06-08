@@ -1,5 +1,5 @@
 import type { ApiConnection, ApiNote, ApiTrip } from "@/shared/api/types"
-import { apiRequest } from "@/shared/api/client"
+import { apiDownload, apiRequest } from "@/shared/api/client"
 
 export async function listTrips(): Promise<ApiTrip[]> {
   return apiRequest<ApiTrip[]>("/trips/")
@@ -25,6 +25,10 @@ export async function updateTrip(slug: string, payload: Partial<ApiTrip>): Promi
 
 export async function deleteTrip(slug: string): Promise<void> {
   await apiRequest<void>(`/trips/${slug}/`, { method: "DELETE" })
+}
+
+export async function downloadJournalPdf(slug: string): Promise<Blob> {
+  return apiDownload(`/trips/${slug}/journal/pdf/`)
 }
 
 export async function finalizeTrip(slug: string): Promise<ApiTrip> {

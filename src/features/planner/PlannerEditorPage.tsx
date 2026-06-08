@@ -1,4 +1,4 @@
-import { ArrowLeft, Check, Plus } from "lucide-react"
+import { ArrowLeft, Check, Plus, Trash2 } from "lucide-react"
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { Link, Navigate, useNavigate, useParams } from "react-router-dom"
 
@@ -8,15 +8,22 @@ import {
   PlannerCurrentStopPreview,
   PlannerRouteList,
 } from "@/features/planner/components/PlannerRouteList"
-import { PlannerRecommendedList } from "@/features/planner/components/PlannerRecommendedList"
+import { PlannerConnectionsList } from "@/features/planner/components/PlannerConnectionsList"
 import {
+  connectionOptionToLeg,
+  DEFAULT_WAITING_MINUTES,
+  filterAndSortConnections,
+  WAITING_TIME_PRESETS,
+} from "@/features/planner/plannerConnectionUtils"
+import {
+  fetchConnectionsFromStop,
   fetchPlannerCities,
-  fetchRecommendedStops,
   fetchStopsForCity,
   legToDepartureStop,
 } from "@/features/planner/plannerLogistics"
 import type {
   PlannerCity,
+  PlannerConnectionOption,
   PlannerDepartureStop,
   PlannerRouteLeg,
 } from "@/features/planner/types"
@@ -30,6 +37,7 @@ import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { usePopularCitiesQuery } from "@/shared/hooks/queries/usePopularCitiesQuery"
 import {
+  useDeleteTripMutation,
   useFinalizeTripMutation,
   useSavePlannerLegsMutation,
 } from "@/shared/hooks/queries/useTripMutations"
@@ -53,6 +61,7 @@ export function PlannerEditorPage() {
   const popularCitiesQuery = usePopularCitiesQuery()
   const saveLegsMutation = useSavePlannerLegsMutation(tripId ?? "")
   const finalizeMutation = useFinalizeTripMutation(tripId ?? "")
+  const deleteTripMutation = useDeleteTripMutation()
   const legsInitializedFor = useRef<string | null>(null)
 
   const [routeLegs, setRouteLegs] = useState<PlannerRouteLeg[]>([])
@@ -66,11 +75,18 @@ export function PlannerEditorPage() {
   const [hoveredStopId, setHoveredStopId] = useState<string | null>(null)
   const [zoomStopId, setZoomStopId] = useState<string | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const saving = saveLegsMutation.isPending || finalizeMutation.isPending
-  const [recommendedItems, setRecommendedItems] = useState<
-    Awaited<ReturnType<typeof fetchRecommendedStops>>
-  >([])
+  const [readyDate, setReadyDate] = useState("")
+  const [readyTime, setReadyTime] = useState("")
+  const [waitingMinutes, setWaitingMinutes] = useState(DEFAULT_WAITING_MINUTES)
+  const [connectionOptions, setConnectionOptions] = useState<PlannerConnectionOption[]>([])
+  const [connectionsLoading, setConnectionsLoading] = useState(false)
+  const [connectionsError, setConnectionsError] = useState<string | null>(null)
+  const [destinationCityQuery, setDestinationCityQuery] = useState("")
+  const [destinationCityResults, setDestinationCityResults] = useState<PlannerCity[]>([])
+  const [selectedDestinationCity, setSelectedDestinationCity] = useState<PlannerCity | null>(null)
 
   useEffect(() => {
     legsInitializedFor.current = null
@@ -104,6 +120,26 @@ export function PlannerEditorPage() {
   }, [cityQuery, popularCitiesQuery.data])
 
   useEffect(() => {
+    const trimmed = destinationCityQuery.trim()
+    if (trimmed.length < 2) {
+      setDestinationCityResults(popularCitiesQuery.data ?? [])
+      return
+    }
+
+    let cancelled = false
+    const timer = window.setTimeout(() => {
+      void fetchPlannerCities(trimmed).then((cities) => {
+        if (!cancelled) setDestinationCityResults(cities)
+      })
+    }, 300)
+
+    return () => {
+      cancelled = true
+      window.clearTimeout(timer)
+    }
+  }, [destinationCityQuery, popularCitiesQuery.data])
+
+  useEffect(() => {
     if (!selectedCity) {
       setPickerStops([])
       return
@@ -120,25 +156,65 @@ export function PlannerEditorPage() {
   }, [selectedCity?.id, selectedCity?.label])
 
   const lastLeg = routeLegs.length > 0 ? routeLegs[routeLegs.length - 1] : null
+  const isFirstLeg = routeLegs.length === 0
 
   useEffect(() => {
     if (!lastLeg) {
-      setRecommendedItems([])
+      setReadyDate("")
+      setReadyTime("")
+      return
+    }
+
+    setReadyDate(lastLeg.date)
+    setReadyTime(lastLeg.time)
+  }, [lastLeg?.id, lastLeg?.date, lastLeg?.time])
+
+  useEffect(() => {
+    if (!lastLeg || !readyDate || !readyTime) {
+      setConnectionOptions([])
+      setConnectionsError(null)
       return
     }
 
     let cancelled = false
-    void fetchRecommendedStops(
-      lastLeg,
-      routeLegs.map((leg) => leg.stopId),
-    ).then((items) => {
-      if (!cancelled) setRecommendedItems(items)
-    })
+    setConnectionsLoading(true)
+    setConnectionsError(null)
+
+    const timer = window.setTimeout(() => {
+      void fetchConnectionsFromStop(
+        lastLeg,
+        readyDate,
+        readyTime,
+        waitingMinutes,
+        routeLegs.map((leg) => leg.stopId),
+      )
+        .then((options) => {
+          if (!cancelled) setConnectionOptions(options)
+        })
+        .catch((err) => {
+          if (!cancelled) {
+            setConnectionOptions([])
+            setConnectionsError(
+              err instanceof Error ? err.message : "Nie udało się pobrać połączeń.",
+            )
+          }
+        })
+        .finally(() => {
+          if (!cancelled) setConnectionsLoading(false)
+        })
+    }, 300)
 
     return () => {
       cancelled = true
+      window.clearTimeout(timer)
     }
-  }, [lastLeg, routeLegs])
+  }, [lastLeg, readyDate, readyTime, waitingMinutes, routeLegs])
+
+  const visibleConnectionOptions = useMemo(
+    () =>
+      filterAndSortConnections(connectionOptions, selectedDestinationCity?.id ?? null),
+    [connectionOptions, selectedDestinationCity?.id],
+  )
 
   const persistLegs = useCallback(
     (legs: PlannerRouteLeg[]) => {
@@ -153,22 +229,29 @@ export function PlannerEditorPage() {
     [saveLegsMutation, tripId],
   )
 
+  const connectionStops = useMemo(
+    (): PlannerDepartureStop[] =>
+      visibleConnectionOptions.map((option) => ({
+        id: option.stopId,
+        cityId: option.cityId,
+        name: option.destinationStopName,
+        address: option.destinationAddress,
+        position: option.position,
+      })),
+    [visibleConnectionOptions],
+  )
+
   const stopById = useMemo(() => {
     const map = new Map<string, PlannerDepartureStop>()
     for (const stop of pickerStops) map.set(stop.id, stop)
-    for (const item of recommendedItems) map.set(item.stop.id, item.stop)
+    for (const stop of connectionStops) map.set(stop.id, stop)
     for (const leg of routeLegs) map.set(leg.stopId, legToDepartureStop(leg))
     return map
-  }, [pickerStops, recommendedItems, routeLegs])
+  }, [connectionStops, pickerStops, routeLegs])
 
   const canPickStop = Boolean(selectedCity && departureDate && departureTime)
   const canAddLeg = canPickStop && selectedStopId !== null
   const canFinalize = routeLegs.length >= MIN_STOPS_TO_FINALIZE && !saving
-
-  const recommendedStops = useMemo(
-    () => recommendedItems.map((item) => item.stop),
-    [recommendedItems],
-  )
 
   useEffect(() => {
     if (selectedStopId && !stopById.has(selectedStopId)) {
@@ -178,36 +261,50 @@ export function PlannerEditorPage() {
 
   const selectedStop = selectedStopId ? stopById.get(selectedStopId) : undefined
 
-  const applyRecommendedStop = useCallback(
-    (stop: PlannerDepartureStop) => {
-      const item = recommendedItems.find((entry) => entry.stop.id === stop.id)
-      const cityLabel = item?.cityLabel ?? stop.address
-      setSelectedCity({
-        id: stop.cityId,
-        label: cityLabel,
-        mapCenter: stop.position,
-        mapZoom: 11,
-      })
-      setCityQuery(cityLabel)
-      setSelectedStopId(stop.id)
+  const handleSelectConnection = useCallback(
+    (option: PlannerConnectionOption) => {
+      const leg: PlannerRouteLeg = {
+        id: createLegId(),
+        ...connectionOptionToLeg(option, {
+          readyDate,
+          readyTime,
+          waitingSeconds: waitingMinutes * 60,
+        }),
+      }
+
+      const nextLegs = [...routeLegs, leg]
+      setRouteLegs(nextLegs)
+      setHoveredStopId(null)
       setZoomStopId(null)
+      setSelectedStopId(null)
+      setDestinationCityQuery("")
+      setSelectedDestinationCity(null)
+      void persistLegs(nextLegs)
     },
-    [recommendedItems],
+    [persistLegs, readyDate, readyTime, routeLegs, waitingMinutes],
   )
 
   const handleStopSelectFromMap = useCallback(
     (stopId: string) => {
-      const stop = stopById.get(stopId)
-      if (!stop) return
-      if (canPickStop && pickerStops.some((item) => item.id === stopId)) {
-        setSelectedStopId(stopId)
+      if (isFirstLeg) {
+        if (canPickStop && pickerStops.some((item) => item.id === stopId)) {
+          setSelectedStopId(stopId)
+        }
         return
       }
-      if (recommendedStops.some((item) => item.id === stopId)) {
-        applyRecommendedStop(stop)
+
+      const option = visibleConnectionOptions.find((item) => item.stopId === stopId)
+      if (option) {
+        handleSelectConnection(option)
       }
     },
-    [applyRecommendedStop, canPickStop, pickerStops, recommendedStops, stopById],
+    [
+      canPickStop,
+      handleSelectConnection,
+      isFirstLeg,
+      pickerStops,
+      visibleConnectionOptions,
+    ],
   )
 
   const handleAddLeg = () => {
@@ -239,6 +336,21 @@ export function PlannerEditorPage() {
     const nextLegs = routeLegs.filter((leg) => leg.id !== legId)
     setRouteLegs(nextLegs)
     void persistLegs(nextLegs)
+  }
+
+  const handleDeleteTrip = () => {
+    if (!tripId) return
+    setSaveError(null)
+    deleteTripMutation.mutate(tripId, {
+      onSuccess: () => {
+        setDeleteConfirmOpen(false)
+        navigate("/planner")
+      },
+      onError: (err) => {
+        setSaveError(err instanceof Error ? err.message : "Nie udało się usunąć podróży.")
+        setDeleteConfirmOpen(false)
+      },
+    })
   }
 
   const handleFinalize = () => {
@@ -283,12 +395,24 @@ export function PlannerEditorPage() {
       title={trip.name}
       subtitle="Buduj trasę krok po kroku — dodawaj przystanki Flixbus"
       action={
-        <Button size="sm" variant="outline" className="gap-2" asChild>
-          <Link to="/planner">
-            <ArrowLeft className="size-4" aria-hidden />
-            Planowanie
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" className="gap-2" asChild>
+            <Link to="/planner">
+              <ArrowLeft className="size-4" aria-hidden />
+              Planowanie
+            </Link>
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            disabled={deleteTripMutation.isPending}
+            onClick={() => setDeleteConfirmOpen(true)}
+          >
+            <Trash2 className="size-4" aria-hidden />
+            Usuń
+          </Button>
+        </div>
       }
       trailing={
         <Button
@@ -338,136 +462,285 @@ export function PlannerEditorPage() {
               <CardHeader>
                 <CardTitle className="text-base">{stepLabel}</CardTitle>
                 <p className="text-xs text-muted-foreground">
-                  Miasto, data, godzina i przystanek — potem dodaj do trasy.
+                  {isFirstLeg
+                    ? "Miasto, data, godzina i przystanek — potem dodaj do trasy."
+                    : "Podaj, od kiedy możesz czekać na autobus i wybierz połączenie z listy."}
                 </p>
               </CardHeader>
               <CardContent className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="planner-city" className="text-[10px] uppercase tracking-wider">
-                    Miasto
-                  </Label>
-                  <Input
-                    id="planner-city"
-                    value={cityQuery}
-                    placeholder="Wyszukaj lub wybierz z listy popularnych miast"
-                    onChange={(event) => {
-                      setCityQuery(event.target.value)
-                      setSelectedCity(null)
-                    }}
-                  />
-                  {cityResults.length > 0 && !selectedCity && (
-                    <ul className="max-h-40 overflow-y-auto rounded-md border border-border">
-                      {cityQuery.trim().length < 2 && (
-                        <li className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                          Popularne miasta
-                        </li>
+                {isFirstLeg ? (
+                  <>
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="planner-city"
+                        className="text-[10px] uppercase tracking-wider"
+                      >
+                        Miasto
+                      </Label>
+                      <Input
+                        id="planner-city"
+                        value={cityQuery}
+                        placeholder="Wyszukaj lub wybierz z listy popularnych miast"
+                        onChange={(event) => {
+                          setCityQuery(event.target.value)
+                          setSelectedCity(null)
+                        }}
+                      />
+                      {cityResults.length > 0 && !selectedCity && (
+                        <ul className="max-h-40 overflow-y-auto rounded-md border border-border">
+                          {cityQuery.trim().length < 2 && (
+                            <li className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                              Popularne miasta
+                            </li>
+                          )}
+                          {cityResults.map((city) => (
+                            <li key={city.id}>
+                              <button
+                                type="button"
+                                className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                                onClick={() => {
+                                  setSelectedCity(city)
+                                  setCityQuery(city.label)
+                                  setCityResults([])
+                                }}
+                              >
+                                {city.label}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
                       )}
-                      {cityResults.map((city) => (
-                        <li key={city.id}>
-                          <button
+                      {selectedCity && (
+                        <p className="text-xs text-muted-foreground">
+                          Wybrane: {selectedCity.label}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="planner-date"
+                          className="text-[10px] uppercase tracking-wider"
+                        >
+                          Data
+                        </Label>
+                        <Input
+                          id="planner-date"
+                          type="date"
+                          value={departureDate}
+                          onChange={(event) => setDepartureDate(event.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="planner-time"
+                          className="text-[10px] uppercase tracking-wider"
+                        >
+                          Godzina
+                        </Label>
+                        <Input
+                          id="planner-time"
+                          type="time"
+                          value={departureTime}
+                          onChange={(event) => setDepartureTime(event.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="planner-stop"
+                        className="text-[10px] uppercase tracking-wider"
+                      >
+                        Przystanek
+                      </Label>
+                      <select
+                        id="planner-stop"
+                        className={selectClassName}
+                        value={selectedStopId ?? ""}
+                        disabled={!canPickStop || pickerStops.length === 0}
+                        onChange={(event) => {
+                          const value = event.target.value
+                          const stopId = value.length > 0 ? value : null
+                          setSelectedStopId(stopId)
+                          setZoomStopId(stopId)
+                        }}
+                      >
+                        <option value="">
+                          {canPickStop
+                            ? pickerStops.length > 0
+                              ? "Wybierz przystanek…"
+                              : "Ładowanie przystanków…"
+                            : "Najpierw miasto, datę i godzinę"}
+                        </option>
+                        {pickerStops.map((stop) => (
+                          <option key={stop.id} value={stop.id}>
+                            {stop.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {selectedStop && (
+                      <PlannerCurrentStopPreview
+                        stopName={selectedStop.name}
+                        address={selectedStop.address}
+                        date={departureDate}
+                        time={departureTime}
+                      />
+                    )}
+
+                    <Button
+                      type="button"
+                      className="w-full gap-2"
+                      disabled={!canAddLeg || saving}
+                      onClick={handleAddLeg}
+                    >
+                      <Plus className="size-4" aria-hidden />
+                      {saving ? "Zapisywanie…" : "Dodaj przystanek"}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    {lastLeg && (
+                      <PlannerCurrentStopPreview
+                        stopName={lastLeg.stopName}
+                        address={lastLeg.address}
+                        date={lastLeg.date}
+                        time={lastLeg.time}
+                      />
+                    )}
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="planner-ready-date"
+                          className="text-[10px] uppercase tracking-wider"
+                        >
+                          Gotowość od — data
+                        </Label>
+                        <Input
+                          id="planner-ready-date"
+                          type="date"
+                          value={readyDate}
+                          onChange={(event) => setReadyDate(event.target.value)}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label
+                          htmlFor="planner-ready-time"
+                          className="text-[10px] uppercase tracking-wider"
+                        >
+                          Gotowość od — godzina
+                        </Label>
+                        <Input
+                          id="planner-ready-time"
+                          type="time"
+                          value={readyTime}
+                          onChange={(event) => setReadyTime(event.target.value)}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="planner-destination-city"
+                        className="text-[10px] uppercase tracking-wider"
+                      >
+                        Miasto docelowe (opcjonalnie)
+                      </Label>
+                      <Input
+                        id="planner-destination-city"
+                        value={destinationCityQuery}
+                        placeholder="Filtruj połączenia do wybranego miasta"
+                        onChange={(event) => {
+                          setDestinationCityQuery(event.target.value)
+                          setSelectedDestinationCity(null)
+                        }}
+                      />
+                      {destinationCityResults.length > 0 && !selectedDestinationCity && (
+                        <ul className="max-h-40 overflow-y-auto rounded-md border border-border">
+                          {destinationCityQuery.trim().length < 2 && (
+                            <li className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                              Popularne miasta
+                            </li>
+                          )}
+                          {destinationCityResults.map((city) => (
+                            <li key={city.id}>
+                              <button
+                                type="button"
+                                className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                                onClick={() => {
+                                  setSelectedDestinationCity(city)
+                                  setDestinationCityQuery(city.label)
+                                  setDestinationCityResults([])
+                                }}
+                              >
+                                {city.label}
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      {selectedDestinationCity ? (
+                        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                          <span>
+                            Cel: <span className="font-medium text-foreground">{selectedDestinationCity.label}</span>
+                          </span>
+                          <Button
                             type="button"
-                            className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
+                            variant="ghost"
+                            size="xs"
                             onClick={() => {
-                              setSelectedCity(city)
-                              setCityQuery(city.label)
-                              setCityResults([])
+                              setSelectedDestinationCity(null)
+                              setDestinationCityQuery("")
                             }}
                           >
-                            {city.label}
-                          </button>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                  {selectedCity && (
-                    <p className="text-xs text-muted-foreground">
-                      Wybrane: {selectedCity.label}
-                    </p>
-                  )}
-                </div>
+                            Wyczyść
+                          </Button>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Bez wyboru miasta zobaczysz wszystkie dostępne kierunki.
+                        </p>
+                      )}
+                    </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="planner-date" className="text-[10px] uppercase tracking-wider">
-                      Data
-                    </Label>
-                    <Input
-                      id="planner-date"
-                      type="date"
-                      value={departureDate}
-                      onChange={(event) => setDepartureDate(event.target.value)}
+                    <div className="space-y-2">
+                      <Label
+                        htmlFor="planner-waiting"
+                        className="text-[10px] uppercase tracking-wider"
+                      >
+                        Maks. czas oczekiwania na autobus
+                      </Label>
+                      <select
+                        id="planner-waiting"
+                        className={selectClassName}
+                        value={waitingMinutes}
+                        onChange={(event) => setWaitingMinutes(Number(event.target.value))}
+                      >
+                        {WAITING_TIME_PRESETS.map((preset) => (
+                          <option key={preset.minutes} value={preset.minutes}>
+                            {preset.label}
+                          </option>
+                        ))}
+                      </select>
+                      <p className="text-xs text-muted-foreground">
+                        Backend szuka kursów, które odjadą w tym oknie od podanej godziny
+                        gotowości.
+                      </p>
+                    </div>
+
+                    <PlannerConnectionsList
+                      items={visibleConnectionOptions}
+                      loading={connectionsLoading}
+                      error={connectionsError}
+                      destinationCityLabel={selectedDestinationCity?.label ?? null}
+                      onSelect={handleSelectConnection}
+                      onHover={(option) => setHoveredStopId(option?.stopId ?? null)}
                     />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="planner-time" className="text-[10px] uppercase tracking-wider">
-                      Godzina
-                    </Label>
-                    <Input
-                      id="planner-time"
-                      type="time"
-                      value={departureTime}
-                      onChange={(event) => setDepartureTime(event.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="planner-stop" className="text-[10px] uppercase tracking-wider">
-                    Przystanek
-                  </Label>
-                  <select
-                    id="planner-stop"
-                    className={selectClassName}
-                    value={selectedStopId ?? ""}
-                    disabled={!canPickStop || pickerStops.length === 0}
-                    onChange={(event) => {
-                      const value = event.target.value
-                      const stopId = value.length > 0 ? value : null
-                      setSelectedStopId(stopId)
-                      setZoomStopId(stopId)
-                    }}
-                  >
-                    <option value="">
-                      {canPickStop
-                        ? pickerStops.length > 0
-                          ? "Wybierz przystanek…"
-                          : "Ładowanie przystanków…"
-                        : "Najpierw miasto, datę i godzinę"}
-                    </option>
-                    {pickerStops.map((stop) => (
-                      <option key={stop.id} value={stop.id}>
-                        {stop.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {selectedStop && (
-                  <PlannerCurrentStopPreview
-                    stopName={selectedStop.name}
-                    address={selectedStop.address}
-                    date={departureDate}
-                    time={departureTime}
-                  />
-                )}
-
-                <Button
-                  type="button"
-                  className="w-full gap-2"
-                  disabled={!canAddLeg || saving}
-                  onClick={handleAddLeg}
-                >
-                  <Plus className="size-4" aria-hidden />
-                  {saving ? "Zapisywanie…" : "Dodaj przystanek"}
-                </Button>
-
-                {routeLegs.length > 0 && (
-                  <PlannerRecommendedList
-                    items={recommendedItems}
-                    selectedStopId={selectedStopId}
-                    onSelect={applyRecommendedStop}
-                    onHover={setHoveredStopId}
-                  />
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -476,13 +749,17 @@ export function PlannerEditorPage() {
 
         <div className="relative min-h-[min(50vh,420px)] min-w-0 flex-1 lg:min-h-0">
           <PlannerMap
-            cityCenter={selectedCity?.mapCenter}
-            cityZoom={selectedCity?.mapZoom}
-            departureDate={departureDate}
-            departureTime={departureTime}
+            cityCenter={
+              isFirstLeg
+                ? selectedCity?.mapCenter
+                : (selectedDestinationCity?.mapCenter ?? lastLeg?.position)
+            }
+            cityZoom={selectedDestinationCity?.mapZoom ?? selectedCity?.mapZoom}
+            departureDate={isFirstLeg ? departureDate : readyDate}
+            departureTime={isFirstLeg ? departureTime : readyTime}
             routeLegs={routeLegs}
-            pickerStops={pickerStops}
-            recommendedStops={recommendedStops}
+            pickerStops={isFirstLeg ? pickerStops : []}
+            recommendedStops={isFirstLeg ? [] : connectionStops}
             stopById={stopById}
             selectedStopId={selectedStopId}
             hoveredStopId={hoveredStopId}
@@ -501,6 +778,16 @@ export function PlannerEditorPage() {
         cancelLabel="Kontynuuj planowanie"
         onConfirm={handleFinalize}
         onCancel={() => setConfirmOpen(false)}
+      />
+
+      <ConfirmDialog
+        open={deleteConfirmOpen}
+        title="Usunąć planowaną podróż?"
+        description={`Czy na pewno chcesz usunąć „${trip.name}"? Tej operacji nie można cofnąć.`}
+        confirmLabel={deleteTripMutation.isPending ? "Usuwanie…" : "Usuń podróż"}
+        cancelLabel="Anuluj"
+        onConfirm={handleDeleteTrip}
+        onCancel={() => setDeleteConfirmOpen(false)}
       />
     </PageLayout>
   )

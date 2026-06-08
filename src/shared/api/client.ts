@@ -87,6 +87,42 @@ function extractErrorMessage(payload: unknown, fallback: string): string {
   return fallback
 }
 
+export async function apiDownload(
+  path: string,
+  options: RequestInit = {},
+  retry = true,
+): Promise<Blob> {
+  const headers = new Headers(options.headers)
+  const token = getAccessToken()
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`)
+  }
+
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers,
+  })
+
+  if (response.status === 401 && retry && getAccessToken()) {
+    const newToken = await refreshAccessToken()
+    if (newToken) {
+      return apiDownload(path, options, false)
+    }
+    throw new AuthError("Sesja wygasła — zaloguj się ponownie.")
+  }
+
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null)
+    throw new ApiError(
+      extractErrorMessage(payload, `Błąd API (${response.status})`),
+      response.status,
+      payload,
+    )
+  }
+
+  return response.blob()
+}
+
 export async function apiRequest<T>(
   path: string,
   options: RequestInit = {},

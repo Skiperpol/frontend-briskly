@@ -195,7 +195,7 @@ export function PlannerMap({
       )}
       {routeLegs.length > 0 && showRecommended && !showHoverPreview && (
         <div className="pointer-events-none absolute inset-x-0 bottom-4 z-10 mx-4 rounded-md bg-background/95 px-3 py-2 text-center text-xs text-muted-foreground shadow-md backdrop-blur">
-          Pomarańczowe markery — polecane przystanki w okolicy ostatniego punktu.
+          Pomarańczowe markery — dostępne przystanki połączeń z ostatniego punktu.
         </div>
       )}
       {routeLegs.length >= 2 && routeStatus === "loading" && (

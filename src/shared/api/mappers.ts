@@ -217,14 +217,30 @@ export function connectionsToPlannerLegs(connections: ApiConnection[]): PlannerR
   )
 
   for (const connection of connections) {
-    legs.push(
-      stopRefToPlannerLeg(
-        connection.destination_stop,
-        String(connection.id),
-        connection.arrival_date,
-        connection.arrival_time,
-      ),
+    const leg = stopRefToPlannerLeg(
+      connection.destination_stop,
+      String(connection.id),
+      connection.arrival_date,
+      connection.arrival_time,
     )
+
+    if (connection.gtfs_trip) {
+      legs.push({
+        ...leg,
+        connectionMeta: {
+          gtfs_trip: connection.gtfs_trip,
+          departure_date: connection.departure_date,
+          departure_time: connection.departure_time,
+          arrival_date: connection.arrival_date,
+          arrival_time: connection.arrival_time,
+          duration_in_travel: connection.duration_in_travel,
+          duration_waiting: connection.duration_waiting,
+          duration_total: connection.duration_total,
+        },
+      })
+    } else {
+      legs.push(leg)
+    }
   }
 
   return legs
@@ -236,6 +252,8 @@ export function plannerLegsToCreateConnectionPayload(
   toLeg: PlannerRouteLeg,
   gtfs: {
     gtfs_trip: string
+    departure_date: string
+    departure_time: string
     arrival_date: string
     arrival_time: string
     duration_in_travel: number
@@ -250,8 +268,8 @@ export function plannerLegsToCreateConnectionPayload(
     starting_stop: fromLeg.stopId,
     destination_stop: toLeg.stopId,
     timezone,
-    departure_date: toLeg.date,
-    departure_time: `${toLeg.time}:00`.slice(0, 8),
+    departure_date: gtfs.departure_date,
+    departure_time: `${gtfs.departure_time}:00`.slice(0, 8),
     arrival_date: gtfs.arrival_date,
     arrival_time: `${gtfs.arrival_time}:00`.slice(0, 8),
     duration_in_travel: gtfs.duration_in_travel,

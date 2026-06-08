@@ -46,6 +46,7 @@ export async function findDestinationsFromStop(params: {
   waitingTimeSeconds: number
   timezone: string
   limit?: number
+  stopsPerCity?: number
 }): Promise<ApiStopDestinationsResponse> {
   const search = new URLSearchParams({
     from_stop: params.fromStop,
@@ -56,6 +57,9 @@ export async function findDestinationsFromStop(params: {
   })
   if (params.limit) {
     search.set("limit", String(params.limit))
+  }
+  if (params.stopsPerCity) {
+    search.set("stops_per_city", String(params.stopsPerCity))
   }
   return apiRequest<ApiStopDestinationsResponse>(`/destinations/stop/?${search}`)
 }

@@ -1,14 +1,14 @@
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useEffect, useMemo, useState } from "react"
 import { Link, Navigate, useParams } from "react-router-dom"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Download } from "lucide-react"
 import { useForm } from "react-hook-form"
 
 import { DraggableNoteTimeline } from "@/features/journal/components/DraggableNoteTimeline"
 import { EditableBlock } from "@/features/journal/components/EditableBlock"
 import { NewNoteForm } from "@/features/journal/components/NewNoteForm"
 import { StopSelector } from "@/features/journal/components/StopSelector"
-import { notesForStop } from "@/features/journal/journalUtils"
+import { exportJournalTripPdf, notesForStop } from "@/features/journal/journalUtils"
 import type { EditableNote } from "@/features/journal/types"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -54,6 +54,7 @@ export function JournalDetailPage() {
   const { trip, editableNotes, loading } = useTrip(tripId)
   const [selectedStopId, setSelectedStopId] = useState("")
   const [mutationError, setMutationError] = useState<string | null>(null)
+  const [exportingPdf, setExportingPdf] = useState(false)
 
   const updateMetadataMutation = useUpdateTripMetadataMutation(tripId ?? "")
   const addNoteMutation = useAddJournalNoteMutation(tripId ?? "")
@@ -184,6 +185,18 @@ export function JournalDetailPage() {
     })
   })
 
+  const handleExportPdf = () => {
+    setMutationError(null)
+    setExportingPdf(true)
+    void exportJournalTripPdf(trip)
+      .catch((error) => {
+        setMutationError(
+          error instanceof Error ? error.message : "Nie udało się wygenerować PDF dziennika.",
+        )
+      })
+      .finally(() => setExportingPdf(false))
+  }
+
   return (
     <PageLayout
       action={
@@ -192,6 +205,18 @@ export function JournalDetailPage() {
             <ArrowLeft className="size-4" />
             Wszystkie trasy
           </Link>
+        </Button>
+      }
+      trailing={
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-2"
+          disabled={exportingPdf}
+          onClick={handleExportPdf}
+        >
+          <Download className="size-4" aria-hidden />
+          {exportingPdf ? "Generowanie PDF…" : "Eksportuj PDF"}
         </Button>
       }
     >

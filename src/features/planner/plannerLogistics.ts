@@ -1,8 +1,12 @@
+import {
+  mapDestinationsToConnectionOptions,
+  waitingMinutesToSeconds,
+} from "@/features/planner/plannerConnectionUtils"
 import type {
   PlannerCity,
+  PlannerConnectionOption,
   PlannerDepartureStop,
   PlannerRouteLeg,
-  RecommendedStop,
 } from "@/features/planner/types"
 import {
   findDestinationsFromStop,
@@ -70,42 +74,29 @@ export async function fetchStopsForCity(
   }))
 }
 
-export async function fetchRecommendedStops(
+export async function fetchConnectionsFromStop(
   lastLeg: PlannerRouteLeg,
+  readyDate: string,
+  readyTime: string,
+  waitingMinutes: number,
   excludeStopIds: string[],
-  limit = 6,
-): Promise<RecommendedStop[]> {
+): Promise<PlannerConnectionOption[]> {
+  if (!readyDate || !readyTime) return []
+
   const excluded = new Set(excludeStopIds)
   const response = await findDestinationsFromStop({
     fromStop: lastLeg.stopId,
-    date: lastLeg.date,
-    time: lastLeg.time,
-    waitingTimeSeconds: 3600,
+    date: readyDate,
+    time: readyTime.slice(0, 5),
+    waitingTimeSeconds: waitingMinutesToSeconds(waitingMinutes),
     timezone: "Europe/Warsaw",
     limit: 100,
+    stopsPerCity: 10,
   })
 
-  return response.connections
-    .filter((connection) => !excluded.has(connection.destination_stop_id))
-    .slice(0, limit)
-    .map((connection) => {
-      const stop = response.stops[connection.destination_stop_id]
-      const city = response.cities[connection.destination_city_id]
-      if (!stop) {
-        return null
-      }
+  const connections = response.connections.filter(
+    (connection) => !excluded.has(connection.destination_stop_id),
+  )
 
-      return {
-        stop: {
-          id: stop.stop_id,
-          cityId: stop.city_id,
-          name: stop.stop_name,
-          address: stop.suburb ?? stop.region ?? stop.city_name,
-          position: { lat: stop.latitude, lng: stop.longitude },
-        },
-        distanceKm: connection.duration_in_travel / 60,
-        cityLabel: city?.city_name ?? stop.city_name,
-      }
-    })
-    .filter((item): item is RecommendedStop => item !== null)
+  return mapDestinationsToConnectionOptions({ ...response, connections })
 }

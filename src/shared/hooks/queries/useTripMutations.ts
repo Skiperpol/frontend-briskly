@@ -4,6 +4,7 @@ import {
   addJournalNote,
   createPlanningTrip,
   deleteJournalNote,
+  deletePlanningTrip,
   finalizeTrip,
   reorderJournalNotes,
   savePlannerLegs,
@@ -25,6 +26,22 @@ function useInvalidateTrips() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.trips.detail(tripId) })
     }
   }
+}
+
+export function useDeleteTripMutation() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: deletePlanningTrip,
+    onSuccess: (_result, tripId) => {
+      queryClient.removeQueries({ queryKey: queryKeys.trips.detail(tripId) })
+      queryClient.setQueryData<TripDetailBundle[]>(queryKeys.trips.list(), (current) =>
+        current ? current.filter((bundle) => bundle.trip.id !== tripId) : [],
+      )
+      void queryClient.invalidateQueries({ queryKey: queryKeys.trips.list() })
+      void queryClient.invalidateQueries({ queryKey: queryKeys.stats.dashboard() })
+    },
+  })
 }
 
 export function useCreateTripMutation() {

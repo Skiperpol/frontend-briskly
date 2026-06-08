@@ -15,6 +15,7 @@ import {
   createTrip,
   deleteConnection,
   deleteConnectionNote,
+  deleteTrip,
   finalizeTrip as apiFinalizeTrip,
   listTripConnections,
   reorderConnectionNotes,
@@ -24,6 +25,11 @@ import {
 
 import { clearPlannerDraftLegs, setPlannerDraftLegs } from "./plannerDrafts"
 import { fetchTripDetail, getPlannerLegs, type TripDetailBundle } from "./tripLoader"
+
+export async function deletePlanningTrip(tripId: string): Promise<void> {
+  await deleteTrip(tripId)
+  clearPlannerDraftLegs(tripId)
+}
 
 export async function createPlanningTrip(): Promise<TripDetailBundle> {
   const created = await createTrip({ name: "Nowa podróż" })
@@ -157,11 +163,19 @@ async function syncPlannerConnections(tripSlug: string, legs: PlannerRouteLeg[])
       mutable.splice(index, 1)
     }
 
+    if (to.connectionMeta?.gtfs_trip) {
+      await createConnection(
+        plannerLegsToCreateConnectionPayload(tripSlug, from, to, to.connectionMeta),
+      )
+      continue
+    }
+
+    const searchMeta = to.connectionMeta
     const destinations = await findDestinationsFromStop({
       fromStop: from.stopId,
-      date: to.date,
-      time: to.time,
-      waitingTimeSeconds: 3600,
+      date: searchMeta?.searchReadyDate ?? from.date,
+      time: (searchMeta?.searchReadyTime ?? from.time).slice(0, 5),
+      waitingTimeSeconds: searchMeta?.searchWaitingSeconds ?? 3600,
       timezone: "Europe/Warsaw",
       limit: 100,
     })
@@ -179,6 +193,8 @@ async function syncPlannerConnections(tripSlug: string, legs: PlannerRouteLeg[])
     await createConnection(
       plannerLegsToCreateConnectionPayload(tripSlug, from, to, {
         gtfs_trip: match.trip_id,
+        departure_date: match.departure_date,
+        departure_time: match.departure_time,
         arrival_date: match.arrival_date,
         arrival_time: match.arrival_time,
         duration_in_travel: match.duration_in_travel,
