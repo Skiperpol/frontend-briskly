@@ -78,8 +78,11 @@ export function PlannerEditorPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const saving = saveLegsMutation.isPending || finalizeMutation.isPending
-  const [readyDate, setReadyDate] = useState("")
-  const [readyTime, setReadyTime] = useState("")
+  const [readyEdits, setReadyEdits] = useState<{
+    legId: string
+    date: string
+    time: string
+  } | null>(null)
   const [waitingMinutes, setWaitingMinutes] = useState(DEFAULT_WAITING_MINUTES)
   const [connectionOptions, setConnectionOptions] = useState<PlannerConnectionOption[]>([])
   const [connectionsLoading, setConnectionsLoading] = useState(false)
@@ -88,7 +91,6 @@ export function PlannerEditorPage() {
   const [searchedDestinationCityResults, setSearchedDestinationCityResults] = useState<
     PlannerCity[]
   >([])
-  const [readyAnchorLegId, setReadyAnchorLegId] = useState<string | null>(null)
   const [selectedDestinationCity, setSelectedDestinationCity] = useState<PlannerCity | null>(null)
 
   useEffect(() => {
@@ -161,12 +163,17 @@ export function PlannerEditorPage() {
 
   const lastLeg = routeLegs.length > 0 ? routeLegs[routeLegs.length - 1] : null
   const isFirstLeg = routeLegs.length === 0
+  const anchorLegId = lastLeg?.id ?? null
 
-  if (lastLeg?.id !== readyAnchorLegId) {
-    setReadyAnchorLegId(lastLeg?.id ?? null)
-    setReadyDate(lastLeg?.date ?? "")
-    setReadyTime(lastLeg?.time ?? "")
-  }
+  const readyDate =
+    anchorLegId && readyEdits?.legId === anchorLegId
+      ? readyEdits.date
+      : (lastLeg?.date ?? "")
+
+  const readyTime =
+    anchorLegId && readyEdits?.legId === anchorLegId
+      ? readyEdits.time
+      : (lastLeg?.time ?? "")
 
   const canSearchConnections = Boolean(lastLeg && readyDate && readyTime)
 
@@ -625,7 +632,17 @@ export function PlannerEditorPage() {
                           id="planner-ready-date"
                           type="date"
                           value={readyDate}
-                          onChange={(event) => setReadyDate(event.target.value)}
+                          onChange={(event) => {
+                            if (!anchorLegId) return
+                            setReadyEdits((prev) => ({
+                              legId: anchorLegId,
+                              date: event.target.value,
+                              time:
+                                prev?.legId === anchorLegId
+                                  ? prev.time
+                                  : (lastLeg?.time ?? ""),
+                            }))
+                          }}
                         />
                       </div>
                       <div className="space-y-2">
@@ -639,7 +656,17 @@ export function PlannerEditorPage() {
                           id="planner-ready-time"
                           type="time"
                           value={readyTime}
-                          onChange={(event) => setReadyTime(event.target.value)}
+                          onChange={(event) => {
+                            if (!anchorLegId) return
+                            setReadyEdits((prev) => ({
+                              legId: anchorLegId,
+                              date:
+                                prev?.legId === anchorLegId
+                                  ? prev.date
+                                  : (lastLeg?.date ?? ""),
+                              time: event.target.value,
+                            }))
+                          }}
                         />
                       </div>
                     </div>

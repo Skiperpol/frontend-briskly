@@ -1,7 +1,11 @@
 import { useMemo, useState } from "react"
 
 import { toLatLngTuple } from "@/domain/models/GeoPosition"
-import { GlobalMap } from "@/features/map/components/GlobalMap"
+import {
+  GlobalMap,
+  MAP_CAMERA_IDLE,
+  MAP_CAMERA_OVERVIEW,
+} from "@/features/map/components/GlobalMap"
 import { MapStyleSwitcher } from "@/features/map/components/MapStyleSwitcher"
 import { MapTripList } from "@/features/map/components/MapTripList"
 import { DEFAULT_MAP_STYLE_ID, type MapStyleId } from "@/features/map/mapStyles"
@@ -17,6 +21,7 @@ export function GlobalMapPage() {
   const { tripMapLayers, journalTrips, tripBundles, loading, error } = useTripData()
   const { layers: routeLayers, status: routeStatus } = useBusRouteLayers(tripMapLayers)
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
+  const [mapView, setMapView] = useState<"overview" | "trip" | "manual">("overview")
   const [mapStyleId, setMapStyleId] = useState<MapStyleId>(DEFAULT_MAP_STYLE_ID)
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -38,15 +43,38 @@ export function GlobalMapPage() {
   const activeTripId =
     selectedTripId && filteredTripIds.has(selectedTripId) ? selectedTripId : null
 
+  const effectiveMapView = useMemo(() => {
+    if (mapView === "trip" && selectedTripId && !filteredTripIds.has(selectedTripId)) {
+      return "manual" as const
+    }
+    return mapView
+  }, [filteredTripIds, mapView, selectedTripId])
+
   const focusPositions = useMemo(() => {
-    const layersForFocus = activeTripId
-      ? tripMapLayers.filter((layer) => layer.tripId === activeTripId)
-      : tripMapLayers.filter((layer) => filteredTripIds.has(layer.tripId))
+    if (!activeTripId) return []
 
-    return collectStopPositions(layersForFocus).map((position) => toLatLngTuple(position))
-  }, [activeTripId, filteredTripIds, tripMapLayers])
+    return collectStopPositions(
+      tripMapLayers.filter((layer) => layer.tripId === activeTripId),
+    ).map((position) => toLatLngTuple(position))
+  }, [activeTripId, tripMapLayers])
 
-  const focusKey = activeTripId ?? "all"
+  const focusKey =
+    effectiveMapView === "trip" && activeTripId
+      ? activeTripId
+      : effectiveMapView === "overview"
+        ? MAP_CAMERA_OVERVIEW
+        : MAP_CAMERA_IDLE
+
+  const handleSelectTrip = (tripId: string) => {
+    if (selectedTripId === tripId) {
+      setSelectedTripId(null)
+      setMapView("overview")
+      return
+    }
+
+    setSelectedTripId(tripId)
+    setMapView("trip")
+  }
 
   const filteredTotalKilometers = useMemo(() => {
     const connections = tripBundles
@@ -108,7 +136,7 @@ export function GlobalMapPage() {
             layers={filteredLayers}
             trips={filteredTrips}
             selectedTripId={activeTripId}
-            onSelectTrip={setSelectedTripId}
+            onSelectTrip={handleSelectTrip}
             tripCount={filteredLayers.length}
             totalKilometers={filteredTotalKilometers}
             emptyMessage={

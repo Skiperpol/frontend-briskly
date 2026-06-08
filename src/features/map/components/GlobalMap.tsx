@@ -23,6 +23,11 @@ import type { TripMapLayer } from "@/features/map/tripMapUtils"
 
 import "mapbox-gl/dist/mapbox-gl.css"
 
+/** Bez ruchu kamery (np. podczas filtrowania wyszukiwarką). */
+export const MAP_CAMERA_IDLE = "idle"
+/** Widok całej Europy — tylko przy starcie lub świadomym odznaczeniu trasy. */
+export const MAP_CAMERA_OVERVIEW = "overview"
+
 const EUROPE_INITIAL_VIEW = {
   longitude: 15,
   latitude: 52,
@@ -79,7 +84,8 @@ export function GlobalMap({
   const pulseBoost = activeStopId ? 2 + Math.sin(pulsePhase) * 2 : 0
   const pulseRingBoost = activeStopId ? 4 + Math.sin(pulsePhase) * 3 : 0
   const token = getMapboxAccessToken()
-  const maxZoom = focusKey === "all" ? 5 : 14
+  const maxZoom =
+    focusKey === MAP_CAMERA_OVERVIEW || focusKey === MAP_CAMERA_IDLE ? 5 : 14
   const mapStyle = getMapStyle(mapStyleId)
 
   const routesGeoJson = useMemo(() => buildRoutesGeoJson(layers), [layers])
@@ -140,8 +146,8 @@ export function GlobalMap({
   }, [highlightedTripId])
   const focusPositionsKey = useMemo(
     () =>
-      focusKey === "all"
-        ? "all"
+      focusKey === MAP_CAMERA_OVERVIEW || focusKey === MAP_CAMERA_IDLE
+        ? focusKey
         : focusPositions
             .map(([lat, lng]) => `${lat.toFixed(5)},${lng.toFixed(5)}`)
             .join("|"),
@@ -154,9 +160,16 @@ export function GlobalMap({
     const map = mapRef.current?.getMap()
     if (!map) return
 
+    if (focusKey === MAP_CAMERA_IDLE) {
+      if (lastCameraKeyRef.current !== MAP_CAMERA_IDLE) {
+        lastCameraKeyRef.current = MAP_CAMERA_IDLE
+      }
+      return
+    }
+
     const cameraKey =
-      focusKey === "all"
-        ? "all"
+      focusKey === MAP_CAMERA_OVERVIEW
+        ? MAP_CAMERA_OVERVIEW
         : `${focusKey}::${focusPositionsKey}::${pointFocusZoom ?? ""}`
 
     if (lastCameraKeyRef.current === cameraKey) return
@@ -165,7 +178,7 @@ export function GlobalMap({
     const animate = hasAppliedCameraRef.current
     hasAppliedCameraRef.current = true
 
-    if (focusKey === "all") {
+    if (focusKey === MAP_CAMERA_OVERVIEW) {
       applyEuropeView(map, animate)
       return
     }
