@@ -2,7 +2,9 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
+  useState,
   useSyncExternalStore,
   type ReactNode,
 } from "react"
@@ -13,10 +15,11 @@ import { AuthService } from "@/domain/services"
 type AuthContextValue = {
   session: AuthSession | null
   isAuthenticated: boolean
-  login: (email: string, password: string) => void
-  register: (displayName: string, email: string, password: string) => void
+  isReady: boolean
+  login: (email: string, password: string) => Promise<void>
+  register: (displayName: string, email: string, password: string) => Promise<void>
   logout: () => void
-  updateDisplayName: (displayName: string) => void
+  updateDisplayName: (displayName: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -40,15 +43,28 @@ function getSnapshot(): AuthSession | null {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const session = useSyncExternalStore(subscribe, getSnapshot, () => null)
+  const [isReady, setIsReady] = useState(false)
 
-  const login = useCallback((email: string, password: string) => {
-    AuthService.getInstance().login(email, password)
+  useEffect(() => {
+    AuthService.getInstance()
+      .initialize()
+      .then(() => {
+        notify()
+        setIsReady(true)
+      })
+      .catch(() => {
+        setIsReady(true)
+      })
+  }, [])
+
+  const login = useCallback(async (email: string, password: string) => {
+    await AuthService.getInstance().login(email, password)
     notify()
   }, [])
 
   const register = useCallback(
-    (displayName: string, email: string, password: string) => {
-      AuthService.getInstance().register(displayName, email, password)
+    async (displayName: string, email: string, password: string) => {
+      await AuthService.getInstance().register(displayName, email, password)
       notify()
     },
     [],
@@ -59,8 +75,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     notify()
   }, [])
 
-  const updateDisplayName = useCallback((displayName: string) => {
-    AuthService.getInstance().updateDisplayName(displayName)
+  const updateDisplayName = useCallback(async (displayName: string) => {
+    await AuthService.getInstance().updateDisplayName(displayName)
     notify()
   }, [])
 
@@ -68,12 +84,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     () => ({
       session,
       isAuthenticated: session !== null,
+      isReady,
       login,
       register,
       logout,
       updateDisplayName,
     }),
-    [session, login, register, logout, updateDisplayName],
+    [session, isReady, login, register, logout, updateDisplayName],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

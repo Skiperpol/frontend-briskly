@@ -104,7 +104,7 @@ function EditableDisplayName({
   onSave,
 }: {
   value: string
-  onSave: (displayName: string) => void
+  onSave: (displayName: string) => Promise<void>
 }) {
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(value)
@@ -117,7 +117,7 @@ function EditableDisplayName({
     }
   }, [value, editing])
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setError(null)
     setSaved(false)
     const trimmed = draft.trim()
@@ -130,7 +130,7 @@ function EditableDisplayName({
       return
     }
     try {
-      onSave(trimmed)
+      await onSave(trimmed)
       setSaved(true)
       setEditing(false)
     } catch (err) {

@@ -1,4 +1,6 @@
+import type { ApiConnection, ApiNote } from "@/shared/api/types"
 import type { JournalEntry, UserTrip } from "@/domain/models"
+import { stopIdToConnectionId } from "@/shared/api/connectionUtils"
 
 import type { EditableNote } from "./types"
 
@@ -20,15 +22,21 @@ export function formatNoteDay(day: string): string {
   }).format(parsed)
 }
 
-export function toEditableNote(entry: JournalEntry): EditableNote {
+export function toEditableNote(
+  entry: JournalEntry,
+  connectionId: number,
+  isImageOnly = false,
+): EditableNote {
   return {
     id: entry.id,
+    connectionId,
     scheduleStopId: entry.scheduleStopId,
     day: entry.day,
     time: entry.time,
     title: entry.title,
     body: entry.body,
     sortOrder: entry.sortOrder,
+    isImageOnly,
     photos: entry.photos.map((photo) => ({
       id: photo.id,
       imageUrl: photo.imageUrl,
@@ -36,6 +44,23 @@ export function toEditableNote(entry: JournalEntry): EditableNote {
       caption: photo.caption,
     })),
   }
+}
+
+export function mapConnectionNotesToEditable(
+  connection: ApiConnection,
+  notes: ApiNote[],
+  journalEntries: JournalEntry[],
+): EditableNote[] {
+  const entryById = new Map(journalEntries.map((entry) => [entry.id, entry]))
+
+  return notes.map((note) => {
+    const entry = entryById.get(String(note.id))
+    if (!entry) {
+      throw new Error(`Brak wpisu dziennika dla notatki ${note.id}`)
+    }
+    const isImageOnly = Boolean(note.image_url && !note.html_source)
+    return toEditableNote(entry, connection.id, isImageOnly)
+  })
 }
 
 export function sortNotes(notes: EditableNote[]): EditableNote[] {
@@ -93,3 +118,5 @@ export function exportJournalTrip(trip: UserTrip): void {
   anchor.click()
   URL.revokeObjectURL(url)
 }
+
+export { stopIdToConnectionId }

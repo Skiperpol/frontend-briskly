@@ -13,7 +13,7 @@ import { useTripData } from "@/shared/hooks/useTripData"
 import { filterTripsByName } from "@/shared/lib/tripSearch"
 
 export function GlobalMapPage() {
-  const { tripMapLayers, journalTrips, stats } = useTripData()
+  const { tripMapLayers, journalTrips, stats, loading, error } = useTripData()
   const { layers: routeLayers, status: routeStatus } = useBusRouteLayers(tripMapLayers)
   const [selectedTripId, setSelectedTripId] = useState<string | null>(null)
   const [mapStyleId, setMapStyleId] = useState<MapStyleId>(DEFAULT_MAP_STYLE_ID)
@@ -87,6 +87,14 @@ export function GlobalMapPage() {
           </div>
         </div>
         <aside className="flex w-80 shrink-0 flex-col border-l border-sidebar-border bg-sidebar p-4">
+          {loading && (
+            <p className="mb-3 text-xs text-muted-foreground">Ładowanie podróży…</p>
+          )}
+          {error && (
+            <p className="mb-3 rounded-md bg-destructive/10 px-2 py-1.5 text-xs text-destructive">
+              {error}
+            </p>
+          )}
           <TripNameSearch
             id="map-trip-search"
             value={searchQuery}

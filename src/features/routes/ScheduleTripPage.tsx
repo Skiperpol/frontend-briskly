@@ -3,7 +3,7 @@ import { Link, Navigate, useParams } from "react-router-dom"
 import { ArrowLeft, Bus } from "lucide-react"
 
 import type { ScheduleStop, UserTrip } from "@/domain/models"
-import { TripService } from "@/domain/services"
+import { useTrip } from "@/shared/hooks/useTrip"
 import { ScheduleTripMap } from "@/features/routes/components/ScheduleTripMap"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
@@ -16,8 +16,18 @@ const TIMELINE_ICON_CLASS = "bg-sky-100 text-sky-600"
 
 export function ScheduleTripPage() {
   const { tripId } = useParams<{ tripId: string }>()
-  const trip = TripService.getInstance().getTripById(tripId ?? "")
+  const { trip, loading } = useTrip(tripId)
   const [focusedStopId, setFocusedStopId] = useState<string | null>(null)
+
+  if (loading) {
+    return (
+      <PageLayout>
+        <div className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+          Ładowanie harmonogramu…
+        </div>
+      </PageLayout>
+    )
+  }
 
   if (!trip) {
     return <Navigate to="/trasy" replace />

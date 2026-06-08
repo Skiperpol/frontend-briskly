@@ -13,18 +13,18 @@ type LoginFormProps = {
 
 export function LoginForm({ onSuccess }: LoginFormProps) {
   const { login } = useAuth()
-  const [email, setEmail] = useState("demo@briskly.app")
-  const [password, setPassword] = useState("demo1234")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
     setLoading(true)
 
     try {
-      login(email, password)
+      await login(email, password)
       onSuccess?.()
     } catch (err) {
       setError(err instanceof AuthError ? err.message : "Logowanie nie powiodło się.")
@@ -71,8 +71,7 @@ export function LoginForm({ onSuccess }: LoginFormProps) {
       </Button>
 
       <p className="text-center text-xs text-muted-foreground">
-        Konto demo: <span className="font-medium">demo@briskly.app</span> /{" "}
-        <span className="font-medium">demo1234</span>
+        Użyj loginu i hasła z konta Django (pole e-mail = username).
       </p>
     </form>
   )

@@ -23,6 +23,7 @@ export function NotePhotoFields({
       imageUrl: URL.createObjectURL(file),
       userDescription: "",
       caption: file.name,
+      file,
     }))
     onChange([...photos, ...added])
   }

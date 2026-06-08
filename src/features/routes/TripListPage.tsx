@@ -47,7 +47,7 @@ function formatTripDescriptionPreview(description: string): string {
 }
 
 export function TripListPage() {
-  const { journalTrips } = useTripData()
+  const { journalTrips, loading, error } = useTripData()
   const [view, setView] = useState<TripViewMode>("grid")
   const [searchQuery, setSearchQuery] = useState("")
 
@@ -92,7 +92,15 @@ export function TripListPage() {
     >
       <ScrollArea className="flex-1">
         <div className="space-y-10 p-6">
-          {!hasResults && (
+          {loading && (
+            <p className="text-center text-sm text-muted-foreground">Ładowanie podróży…</p>
+          )}
+          {error && (
+            <p className="rounded-md bg-destructive/10 px-3 py-2 text-center text-sm text-destructive">
+              {error}
+            </p>
+          )}
+          {!loading && !hasResults && (
             <p className="text-center text-sm text-muted-foreground">
               {hasSearch
                 ? "Brak wycieczek pasujących do wyszukiwania."

@@ -18,7 +18,9 @@ function fieldInputClassName() {
 
 type NewNoteFormProps = {
   defaultDay: string
-  onAdd: (note: Omit<EditableNote, "id" | "sortOrder" | "scheduleStopId">) => void
+  onAdd: (
+    note: Omit<EditableNote, "id" | "sortOrder" | "scheduleStopId" | "connectionId">,
+  ) => void
   disabled?: boolean
 }
 

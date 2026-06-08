@@ -3,10 +3,12 @@ export type EditablePhoto = {
   imageUrl: string
   userDescription: string
   caption: string
+  file?: File
 }
 
 export type EditableNote = {
   id: string
+  connectionId: number
   scheduleStopId: string
   day: string
   time: string
@@ -14,4 +16,5 @@ export type EditableNote = {
   body: string
   photos: EditablePhoto[]
   sortOrder: number
+  isImageOnly?: boolean
 }

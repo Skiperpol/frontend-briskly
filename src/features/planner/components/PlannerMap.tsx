@@ -10,7 +10,7 @@ import {
   buildRecommendedMapLayer,
   buildRouteMapLayer,
 } from "@/features/planner/plannerMapUtils"
-import { getDepartureStopById, getPlannerCity } from "@/features/planner/plannerStops"
+import type { GeoPosition } from "@/domain/models/GeoPosition"
 import type {
   PlannerDepartureStop,
   PlannerRouteLeg,
@@ -18,12 +18,14 @@ import type {
 import { useBusRouteLayers } from "@/shared/hooks/useBusRouteLayers"
 
 type PlannerMapProps = {
-  cityId: string
+  cityCenter?: GeoPosition
+  cityZoom?: number
   departureDate: string
   departureTime: string
   routeLegs: PlannerRouteLeg[]
   pickerStops: PlannerDepartureStop[]
   recommendedStops: PlannerDepartureStop[]
+  stopById: Map<string, PlannerDepartureStop>
   selectedStopId: string | null
   hoveredStopId: string | null
   /** Ustawiane tylko z selecta — steruje przybliżeniem mapy. */
@@ -33,12 +35,14 @@ type PlannerMapProps = {
 }
 
 export function PlannerMap({
-  cityId,
+  cityCenter,
+  cityZoom = 11,
   departureDate,
   departureTime,
   routeLegs,
   pickerStops,
   recommendedStops,
+  stopById,
   selectedStopId,
   hoveredStopId,
   zoomStopId,
@@ -46,13 +50,13 @@ export function PlannerMap({
   onStopHover,
 }: PlannerMapProps) {
   const [mapStyleId] = useState(DEFAULT_MAP_STYLE_ID)
-  const canPickStop = Boolean(cityId && departureDate && departureTime)
+  const canPickStop = Boolean(cityCenter && departureDate && departureTime)
   const showRecommended = routeLegs.length > 0 && recommendedStops.length > 0
   const lastLeg = routeLegs.length > 0 ? routeLegs[routeLegs.length - 1] : null
 
   const previewTargetId = hoveredStopId ?? selectedStopId
-  const previewStop = previewTargetId ? getDepartureStopById(previewTargetId) : undefined
-  const zoomStop = zoomStopId ? getDepartureStopById(zoomStopId) : undefined
+  const previewStop = previewTargetId ? stopById.get(previewTargetId) : undefined
+  const zoomStop = zoomStopId ? stopById.get(zoomStopId) : undefined
 
   const routeBaseLayers = useMemo(() => {
     const routeLayer = buildRouteMapLayer(routeLegs)
@@ -128,15 +132,14 @@ export function PlannerMap({
       return pickerStops.map((stop) => toLatLngTuple(stop.position))
     }
 
-    const city = getPlannerCity(cityId)
-    if (city) {
-      return [toLatLngTuple(city.mapCenter)]
+    if (cityCenter) {
+      return [toLatLngTuple(cityCenter)]
     }
 
     return []
   }, [
     canPickStop,
-    cityId,
+    cityCenter,
     lastLeg,
     pickerStops,
     routeLegs.length,
@@ -149,14 +152,12 @@ export function PlannerMap({
   const focusKey = [
     "planner",
     routeLegs.map((leg) => leg.id).join(","),
-    cityId,
+    cityCenter ? `${cityCenter.lat},${cityCenter.lng}` : "no-city",
     zoomStopId ? `${zoomStopId}-${zoomPathReady ? "ready" : "pending"}` : "overview",
   ].join("|")
 
   const pointFocusZoom =
-    focusPositions.length === 1 && !zoomStopId
-      ? getPlannerCity(cityId)?.mapZoom ?? 12
-      : undefined
+    focusPositions.length === 1 && !zoomStopId ? cityZoom : undefined
 
   const canInteract = selectableStopIds.length > 0
   const showHoverPreview = previewBaseLayers.length > 0

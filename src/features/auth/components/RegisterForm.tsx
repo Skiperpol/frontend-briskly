@@ -20,7 +20,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  function handleSubmit(event: FormEvent) {
+  async function handleSubmit(event: FormEvent) {
     event.preventDefault()
     setError(null)
 
@@ -31,7 +31,7 @@ export function RegisterForm({ onSuccess }: RegisterFormProps) {
 
     setLoading(true)
     try {
-      register(displayName, email, password)
+      await register(displayName, email, password)
       onSuccess?.()
     } catch (err) {
       setError(err instanceof AuthError ? err.message : "Rejestracja nie powiodła się.")
