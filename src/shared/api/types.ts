@@ -21,6 +21,7 @@ export type ApiTrip = {
   end_date: string | null
   thumbnail_url: string | null
   created_at: string
+  journal_entry_count?: number
 }
 
 export type ApiDashboardStats = {

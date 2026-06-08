@@ -15,6 +15,7 @@ export class UserTrip {
   legs: RouteLeg[]
   scheduleStops: ScheduleStop[]
   readonly journalEntries: JournalEntry[]
+  readonly journalEntryCount: number
   mapPath: GeoPosition[]
   finalizedAt: Date | null
 
@@ -32,6 +33,7 @@ export class UserTrip {
     journalEntries: JournalEntry[],
     finalizedAt: Date | null = null,
     mapPath: GeoPosition[] = [],
+    journalEntryCount?: number,
   ) {
     this.id = id
     this.slug = slug
@@ -44,6 +46,7 @@ export class UserTrip {
     this.legs = legs
     this.scheduleStops = scheduleStops
     this.journalEntries = journalEntries
+    this.journalEntryCount = journalEntryCount ?? journalEntries.length
     this.finalizedAt = finalizedAt
     this.mapPath = mapPath
   }

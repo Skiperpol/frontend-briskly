@@ -37,7 +37,7 @@ export function useTripData() {
     (statsQuery.error instanceof Error ? statsQuery.error.message : null)
 
   return {
-    loading: tripsQuery.isLoading || statsQuery.isLoading,
+    loading: tripsQuery.isLoading,
     error: errorMessage,
     activeTrip: journalTrips[0] ?? EMPTY_TRIP,
     journalTrips,

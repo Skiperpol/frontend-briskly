@@ -189,7 +189,7 @@ function TripSection({
 }
 
 function TripBadges({ trip }: { trip: UserTrip }) {
-  const entryCount = trip.journalEntries.length
+  const entryCount = trip.journalEntryCount
 
   return (
     <>
@@ -282,7 +282,7 @@ function TripListRow({
   exporting: boolean
   onExport: () => void
 }) {
-  const entryCount = trip.journalEntries.length
+  const entryCount = trip.journalEntryCount
 
   return (
     <div className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:bg-muted/40">

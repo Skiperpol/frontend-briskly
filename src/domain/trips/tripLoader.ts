@@ -27,6 +27,8 @@ export type TripDetailBundle = {
   connections: ApiConnection[]
   notesByConnection: Map<number, ApiNote[]>
   editableNotes: EditableNote[]
+  /** Lightweight list payload — notes load on demand in trip detail. */
+  isSummary?: boolean
 }
 
 export function getPlannerLegs(
@@ -46,15 +48,25 @@ export function getPlannerLegs(
   return draft ?? []
 }
 
-async function buildTripDetailBundle(trip: ApiTrip): Promise<TripDetailBundle> {
-  const connections = await listTripConnections(trip.slug)
-  const notesByConnection = new Map<number, ApiNote[]>()
+async function fetchNotesByConnection(
+  connections: ApiConnection[],
+): Promise<Map<number, ApiNote[]>> {
+  const entries = await Promise.all(
+    connections.map(async (connection) => {
+      const notes = await listConnectionNotes(connection.id)
+      return [connection.id, notes] as const
+    }),
+  )
 
-  for (const connection of connections) {
-    const notes = await listConnectionNotes(connection.id)
-    notesByConnection.set(connection.id, notes)
-  }
+  return new Map(entries)
+}
 
+function buildTripBundle(
+  trip: ApiTrip,
+  connections: ApiConnection[],
+  notesByConnection: Map<number, ApiNote[]>,
+  isSummary: boolean,
+): TripDetailBundle {
   const userTrip = mapApiTripToUserTrip(trip, connections, notesByConnection)
   const editableNotes = connections.flatMap((connection) => {
     const notes = notesByConnection.get(connection.id) ?? []
@@ -66,18 +78,24 @@ async function buildTripDetailBundle(trip: ApiTrip): Promise<TripDetailBundle> {
     connections,
     notesByConnection,
     editableNotes,
+    isSummary,
   }
+}
+
+async function buildTripListBundle(trip: ApiTrip): Promise<TripDetailBundle> {
+  const connections = await listTripConnections(trip.slug)
+  return buildTripBundle(trip, connections, new Map(), true)
+}
+
+async function buildTripDetailBundle(trip: ApiTrip): Promise<TripDetailBundle> {
+  const connections = await listTripConnections(trip.slug)
+  const notesByConnection = await fetchNotesByConnection(connections)
+  return buildTripBundle(trip, connections, notesByConnection, false)
 }
 
 export async function fetchTripsList(): Promise<TripDetailBundle[]> {
   const apiTrips = await listTrips()
-  const bundles: TripDetailBundle[] = []
-
-  for (const trip of apiTrips) {
-    bundles.push(await buildTripDetailBundle(trip))
-  }
-
-  return bundles
+  return Promise.all(apiTrips.map((trip) => buildTripListBundle(trip)))
 }
 
 export async function fetchTripDetail(slug: string): Promise<TripDetailBundle | undefined> {

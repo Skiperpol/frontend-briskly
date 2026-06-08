@@ -143,6 +143,7 @@ export function mapApiTripToUserTrip(
     journalEntries,
     isTripFinalized(trip) ? new Date(trip.end_date ?? trip.start_date ?? trip.created_at) : null,
     connectionsToMapPath(connections),
+    trip.journal_entry_count ?? journalEntries.length,
   )
 }
 
