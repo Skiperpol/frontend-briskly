@@ -64,6 +64,7 @@ export function GlobalMapPage() {
             layers={filteredLayers}
             focusPositions={focusPositions}
             focusKey={focusKey}
+            highlightedTripId={activeTripId}
             mapStyleId={mapStyleId}
           />
           {routeStatus === "loading" && (

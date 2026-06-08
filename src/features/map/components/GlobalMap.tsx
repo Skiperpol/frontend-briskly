@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react"
-import type { MapLayerMouseEvent } from "mapbox-gl"
+import type {
+  DataDrivenPropertyValueSpecification,
+  LineLayerSpecification,
+  MapLayerMouseEvent,
+} from "mapbox-gl"
 import Map, { Layer, NavigationControl, Source, type MapRef } from "react-map-gl/mapbox"
 
 import type { LatLngTuple } from "@/domain/models/GeoPosition"
@@ -14,6 +18,7 @@ import {
 import { buildRoutesGeoJson, buildStopsGeoJson } from "@/features/map/mapGeoJson"
 import { getMapboxAccessToken } from "@/features/map/mapboxConfig"
 import { getMapStyle, type MapStyleId } from "@/features/map/mapStyles"
+import { DIMMED_TRIP_OPACITY } from "@/features/map/tripMapConstants"
 import type { TripMapLayer } from "@/features/map/tripMapUtils"
 
 import "mapbox-gl/dist/mapbox-gl.css"
@@ -40,6 +45,8 @@ type GlobalMapProps = {
   onStopHover?: (stopId: string | null) => void
   /** Jeśli podane — tylko te markery reagują na klik/hover (np. bez punktów trasy). */
   selectableStopIds?: string[]
+  /** Podświetlona trasa; pozostałe są przyciemniane (70% przezroczystości). */
+  highlightedTripId?: string | null
 }
 
 const STOPS_LAYER_ID = "bus-stops-circle"
@@ -55,6 +62,7 @@ export function GlobalMap({
   onStopSelect,
   onStopHover,
   selectableStopIds,
+  highlightedTripId = null,
 }: GlobalMapProps) {
   const selectableSet = useMemo(
     () => (selectableStopIds ? new Set(selectableStopIds) : null),
@@ -76,6 +84,60 @@ export function GlobalMap({
 
   const routesGeoJson = useMemo(() => buildRoutesGeoJson(layers), [layers])
   const stopsGeoJson = useMemo(() => buildStopsGeoJson(layers), [layers])
+
+  const routeLinePaint = useMemo((): LineLayerSpecification["paint"] => {
+    const activeOpacity = (dashed: boolean) => (dashed ? 0.75 : 0.92)
+    const dimmedOpacity = (dashed: boolean) => activeOpacity(dashed) * DIMMED_TRIP_OPACITY
+
+    if (!highlightedTripId) {
+      return {
+        "line-color": ["get", "color"],
+        "line-width": ["case", ["==", ["get", "dashed"], true], 4, 5],
+        "line-opacity": [
+          "case",
+          ["==", ["get", "dashed"], true],
+          activeOpacity(true),
+          activeOpacity(false),
+        ],
+        "line-dasharray": [
+          "case",
+          ["==", ["get", "dashed"], true],
+          ["literal", [2, 2]],
+          ["literal", [1, 0]],
+        ],
+        "line-opacity-transition": { duration: 250, delay: 0 },
+      }
+    }
+
+    return {
+      "line-color": ["get", "color"],
+      "line-width": ["case", ["==", ["get", "dashed"], true], 4, 5],
+      "line-opacity": [
+        "case",
+        ["==", ["get", "tripId"], highlightedTripId],
+        ["case", ["==", ["get", "dashed"], true], activeOpacity(true), activeOpacity(false)],
+        ["case", ["==", ["get", "dashed"], true], dimmedOpacity(true), dimmedOpacity(false)],
+      ],
+      "line-dasharray": [
+        "case",
+        ["==", ["get", "dashed"], true],
+        ["literal", [2, 2]],
+        ["literal", [1, 0]],
+      ],
+      "line-opacity-transition": { duration: 250, delay: 0 },
+    }
+  }, [highlightedTripId])
+
+  const stopMarkerOpacity = useMemo((): DataDrivenPropertyValueSpecification<number> => {
+    if (!highlightedTripId) return 1
+
+    return [
+      "case",
+      ["==", ["get", "tripId"], highlightedTripId],
+      1,
+      DIMMED_TRIP_OPACITY,
+    ]
+  }, [highlightedTripId])
   const focusPositionsKey = useMemo(
     () =>
       focusKey === "all"
@@ -233,27 +295,7 @@ export function GlobalMap({
         <Layer
           id="bus-routes-line"
           type="line"
-          paint={{
-            "line-color": ["get", "color"],
-            "line-width": [
-              "case",
-              ["==", ["get", "dashed"], true],
-              4,
-              5,
-            ],
-            "line-opacity": [
-              "case",
-              ["==", ["get", "dashed"], true],
-              0.75,
-              0.92,
-            ],
-            "line-dasharray": [
-              "case",
-              ["==", ["get", "dashed"], true],
-              ["literal", [2, 2]],
-              ["literal", [1, 0]],
-            ],
-          }}
+          paint={routeLinePaint}
           layout={{
             "line-cap": "round",
             "line-join": "round",
@@ -300,6 +342,8 @@ export function GlobalMap({
               2,
             ],
             "circle-stroke-color": "#ffffff",
+            "circle-opacity": stopMarkerOpacity,
+            "circle-opacity-transition": { duration: 250, delay: 0 },
           }}
         />
       </Source>
