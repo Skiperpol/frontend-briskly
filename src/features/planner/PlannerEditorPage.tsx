@@ -31,6 +31,8 @@ const selectClassName = cn(
   "h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2.5 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 md:text-sm dark:bg-input/30",
 )
 
+const MIN_STOPS_TO_FINALIZE = 2
+
 function createLegId(): string {
   return `leg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
@@ -62,7 +64,7 @@ export function PlannerEditorPage() {
 
   const canPickStop = Boolean(cityId && departureDate && departureTime)
   const canAddLeg = canPickStop && selectedStopId !== null
-  const canFinalize = routeLegs.length > 0
+  const canFinalize = routeLegs.length >= MIN_STOPS_TO_FINALIZE
 
   const pickerStops = useMemo(
     () => (canPickStop ? getDepartureStopsForCity(cityId) : []),
@@ -178,6 +180,11 @@ export function PlannerEditorPage() {
           size="sm"
           className="gap-2"
           disabled={!canFinalize}
+          title={
+            canFinalize
+              ? undefined
+              : `Dodaj co najmniej ${MIN_STOPS_TO_FINALIZE} przystanki, aby zatwierdzić trasę`
+          }
           onClick={() => setConfirmOpen(true)}
         >
           <Check className="size-4" aria-hidden />
@@ -190,8 +197,18 @@ export function PlannerEditorPage() {
           <div className="space-y-6 p-6">
             {routeLegs.length > 0 && (
               <Card>
-                <CardContent className="pt-6">
+                <CardContent className="space-y-3 pt-6">
                   <PlannerRouteList legs={routeLegs} onRemove={handleRemoveLeg} />
+                  {routeLegs.length < MIN_STOPS_TO_FINALIZE && (
+                    <p className="text-xs text-muted-foreground">
+                      Do zatwierdzenia trasy potrzebujesz jeszcze{" "}
+                      {MIN_STOPS_TO_FINALIZE - routeLegs.length}{" "}
+                      {MIN_STOPS_TO_FINALIZE - routeLegs.length === 1
+                        ? "przystanek"
+                        : "przystanki"}
+                      .
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             )}

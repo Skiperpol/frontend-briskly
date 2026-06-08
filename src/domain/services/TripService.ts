@@ -1073,7 +1073,7 @@ export class TripService {
     if (!trip || trip.isFinalized) return false
 
     const legs = this.getPlannerLegs(tripId)
-    if (legs.length === 0) return false
+    if (legs.length < 2) return false
 
     this.savePlannerLegs(tripId, legs)
     trip.finalize()
