@@ -1,19 +1,17 @@
 import { useState } from "react"
 import { Link, Navigate, useParams } from "react-router-dom"
-import { ArrowLeft, Bus } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 
-import type { ScheduleStop, UserTrip } from "@/domain/models"
+import type { UserTrip } from "@/domain/models"
 import { useTrip } from "@/shared/hooks/useTrip"
+import { ScheduleStopCard } from "@/features/routes/components/ScheduleStopCard"
 import { ScheduleTripMap } from "@/features/routes/components/ScheduleTripMap"
 import { TripDetailViewNav } from "@/features/routes/components/TripDetailViewNav"
-import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
 import { cn } from "@/shared/lib/utils"
-
-const TIMELINE_ICON_CLASS = "bg-sky-100 text-sky-600"
 
 export function ScheduleTripPage() {
   const { tripId } = useParams<{ tripId: string }>()
@@ -120,89 +118,3 @@ function ScheduleHeaderCard({
   )
 }
 
-function ScheduleStopCard({
-  stop,
-  selected,
-  onSelect,
-}: {
-  stop: ScheduleStop
-  selected: boolean
-  onSelect: () => void
-}) {
-  const hasMapPosition = Boolean(stop.position)
-  const isInteractive = hasMapPosition
-
-  return (
-    <div className="relative flex gap-4 pb-6 last:pb-0">
-      <div
-        className={`relative z-10 flex size-7 shrink-0 items-center justify-center rounded-full border-2 border-background ${TIMELINE_ICON_CLASS}`}
-      >
-        <Bus className="size-3.5" aria-hidden />
-      </div>
-      <Card
-        className={cn(
-          "flex-1 py-3 transition-shadow",
-          isInteractive && "cursor-pointer hover:shadow-md",
-          selected && "ring-2 ring-primary ring-offset-2 ring-offset-background",
-          !isInteractive && "opacity-90",
-        )}
-        onClick={isInteractive ? onSelect : undefined}
-        onKeyDown={
-          isInteractive
-            ? (event) => {
-                if (event.key === "Enter" || event.key === " ") {
-                  event.preventDefault()
-                  onSelect()
-                }
-              }
-            : undefined
-        }
-        role={isInteractive ? "button" : undefined}
-        tabIndex={isInteractive ? 0 : undefined}
-        aria-pressed={isInteractive ? selected : undefined}
-        aria-label={
-          isInteractive
-            ? `${stop.title}, ${stop.subtitle} — pokaż na mapie`
-            : undefined
-        }
-      >
-        <CardContent className="space-y-2 px-4 py-0">
-          <p className="text-[10px] font-medium text-muted-foreground">{stop.time}</p>
-          <p className="font-semibold">{stop.title}</p>
-          <p className="text-sm text-muted-foreground">{stop.subtitle}</p>
-          {stop.imageUrl && (
-            <img
-              src={stop.imageUrl}
-              alt=""
-              className="h-20 w-full rounded-lg object-cover"
-            />
-          )}
-          {stop.journalSnippet && (
-            <p className="rounded-lg bg-muted/80 p-2 text-xs italic text-muted-foreground">
-              &ldquo;{stop.journalSnippet}&rdquo;
-            </p>
-          )}
-          {Object.entries(stop.details).length > 0 && (
-            <dl className="grid grid-cols-2 gap-1 text-xs">
-              {Object.entries(stop.details).map(([key, value]) => (
-                <div key={key}>
-                  <dt className="text-muted-foreground">{key}</dt>
-                  <dd className="font-medium">{value}</dd>
-                </div>
-              ))}
-            </dl>
-          )}
-          {stop.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {stop.tags.map((tag) => (
-                <Badge key={tag} variant="outline" className="text-[10px]">
-                  {tag}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
-  )
-}

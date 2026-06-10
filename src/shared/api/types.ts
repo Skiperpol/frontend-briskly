@@ -41,14 +41,17 @@ export type ApiDashboardStats = {
 export type ApiStopRef = {
   stop_id: string
   stop_name: string
-  city_id: string
-  city_name: string
+  city_id?: string
+  city_name?: string
   region?: string
   country_code?: string
   country_name?: string
   longitude: number
   latitude: number
   thumbnail_url?: string | null
+  city_population?: number | null
+  city_description?: string | null
+  description_paragraphs?: string[]
 }
 
 export type ApiConnection = {

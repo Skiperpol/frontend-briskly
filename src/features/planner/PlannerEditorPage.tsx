@@ -10,9 +10,11 @@ import {
 } from "@/features/planner/components/PlannerRouteList"
 import { PlannerConnectionsList } from "@/features/planner/components/PlannerConnectionsList"
 import {
+  clampScheduleToMinimum,
   connectionOptionToLeg,
   DEFAULT_WAITING_MINUTES,
   filterAndSortConnections,
+  isScheduleBefore,
   WAITING_TIME_PRESETS,
 } from "@/features/planner/plannerConnectionUtils"
 import {
@@ -148,7 +150,31 @@ export function PlannerEditorPage() {
       ? readyEdits.time
       : (lastLeg?.time ?? "")
 
-  const canSearchConnections = Boolean(lastLeg && readyDate && readyTime)
+  const minReadySchedule = lastLeg
+    ? { date: lastLeg.date, time: lastLeg.time.slice(0, 5) }
+    : null
+
+  const canSearchConnections = Boolean(
+    lastLeg &&
+      readyDate &&
+      readyTime &&
+      (!minReadySchedule ||
+        !isScheduleBefore({ date: readyDate, time: readyTime }, minReadySchedule)),
+  )
+
+  useEffect(() => {
+    if (!lastLeg || !readyEdits || readyEdits.legId !== lastLeg.id || !minReadySchedule) {
+      return
+    }
+
+    const clamped = clampScheduleToMinimum(
+      { date: readyEdits.date, time: readyEdits.time },
+      minReadySchedule,
+    )
+    if (clamped.date !== readyEdits.date || clamped.time !== readyEdits.time) {
+      setReadyEdits({ legId: lastLeg.id, ...clamped })
+    }
+  }, [lastLeg, minReadySchedule, readyEdits])
 
   useEffect(() => {
     if (!canSearchConnections || !lastLeg) return
@@ -190,9 +216,9 @@ export function PlannerEditorPage() {
   }, [canSearchConnections, lastLeg, readyDate, readyTime, waitingMinutes, routeLegs])
 
   const visibleConnectionOptions = useMemo(() => {
-    if (!canSearchConnections) return []
-    return filterAndSortConnections(connectionOptions)
-  }, [canSearchConnections, connectionOptions])
+    if (!canSearchConnections || !minReadySchedule) return []
+    return filterAndSortConnections(connectionOptions, minReadySchedule)
+  }, [canSearchConnections, connectionOptions, minReadySchedule])
 
   const persistLegs = useCallback(
     (legs: PlannerRouteLeg[]) => {
@@ -244,6 +270,19 @@ export function PlannerEditorPage() {
 
   const handleSelectConnection = useCallback(
     (option: PlannerConnectionOption) => {
+      if (
+        minReadySchedule &&
+        isScheduleBefore(
+          {
+            date: option.connection.arrival_date,
+            time: option.connection.arrival_time.slice(0, 5),
+          },
+          minReadySchedule,
+        )
+      ) {
+        return
+      }
+
       const leg: PlannerRouteLeg = {
         id: createLegId(),
         ...connectionOptionToLeg(option, {
@@ -260,7 +299,7 @@ export function PlannerEditorPage() {
       setSelectedStopId(null)
       void persistLegs(nextLegs)
     },
-    [persistLegs, readyDate, readyTime, routeLegs, waitingMinutes],
+    [minReadySchedule, persistLegs, readyDate, readyTime, routeLegs, waitingMinutes],
   )
 
   const handleStopSelectFromMap = useCallback(
@@ -602,17 +641,22 @@ export function PlannerEditorPage() {
                         <Input
                           id="planner-ready-date"
                           type="date"
+                          min={minReadySchedule?.date}
                           value={readyDate}
                           onChange={(event) => {
-                            if (!anchorLegId) return
-                            setReadyEdits((prev) => ({
+                            if (!anchorLegId || !minReadySchedule) return
+                            const nextTime =
+                              readyEdits?.legId === anchorLegId
+                                ? readyEdits.time
+                                : (lastLeg?.time ?? "")
+                            const clamped = clampScheduleToMinimum(
+                              { date: event.target.value, time: nextTime },
+                              minReadySchedule,
+                            )
+                            setReadyEdits({
                               legId: anchorLegId,
-                              date: event.target.value,
-                              time:
-                                prev?.legId === anchorLegId
-                                  ? prev.time
-                                  : (lastLeg?.time ?? ""),
-                            }))
+                              ...clamped,
+                            })
                           }}
                         />
                       </div>
@@ -626,21 +670,43 @@ export function PlannerEditorPage() {
                         <Input
                           id="planner-ready-time"
                           type="time"
+                          min={
+                            minReadySchedule && readyDate === minReadySchedule.date
+                              ? minReadySchedule.time
+                              : undefined
+                          }
                           value={readyTime}
                           onChange={(event) => {
-                            if (!anchorLegId) return
-                            setReadyEdits((prev) => ({
+                            if (!anchorLegId || !minReadySchedule) return
+                            const nextDate =
+                              readyEdits?.legId === anchorLegId
+                                ? readyEdits.date
+                                : (lastLeg?.date ?? "")
+                            const clamped = clampScheduleToMinimum(
+                              { date: nextDate, time: event.target.value },
+                              minReadySchedule,
+                            )
+                            setReadyEdits({
                               legId: anchorLegId,
-                              date:
-                                prev?.legId === anchorLegId
-                                  ? prev.date
-                                  : (lastLeg?.date ?? ""),
-                              time: event.target.value,
-                            }))
+                              ...clamped,
+                            })
                           }}
                         />
                       </div>
                     </div>
+                    {minReadySchedule && (
+                      <p className="text-xs text-muted-foreground">
+                        Nie wcześniej niż ostatni przyjazd:{" "}
+                        {new Date(
+                          `${minReadySchedule.date}T${minReadySchedule.time}`,
+                        ).toLocaleString("pl-PL", {
+                          day: "numeric",
+                          month: "short",
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </p>
+                    )}
 
                     <div className="space-y-2">
                       <Label
@@ -704,10 +770,16 @@ export function PlannerEditorPage() {
         open={confirmOpen}
         title="Zakończyć planowanie podróży?"
         description="Czy na pewno chcesz zatwierdzić trasę? Po zatwierdzeniu nie będzie można jej edytować w planowaniu."
-        confirmLabel="Zatwierdź trasę"
+        confirmLabel={
+          finalizeMutation.isPending ? "Zatwierdzanie…" : "Zatwierdź trasę"
+        }
         cancelLabel="Kontynuuj planowanie"
+        loading={finalizeMutation.isPending}
+        loadingDescription="Przygotowujemy harmonogram podróży — to może chwilę potrwać."
         onConfirm={handleFinalize}
-        onCancel={() => setConfirmOpen(false)}
+        onCancel={() => {
+          if (!finalizeMutation.isPending) setConfirmOpen(false)
+        }}
       />
 
       <ConfirmDialog

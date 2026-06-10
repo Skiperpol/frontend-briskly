@@ -2,6 +2,19 @@ import type { GeoPosition } from "./GeoPosition"
 
 export type ScheduleStopKind = "flight" | "hotel" | "journal" | "dining" | "train" | "bus"
 
+export type ScheduleStopTiming = {
+  arrivalDate?: string
+  arrivalTime?: string
+  departureDate?: string
+  departureTime?: string
+  stayDays?: number
+}
+
+export type ScheduleStopCityInfo = {
+  descriptionParagraphs?: string[]
+  population?: number
+}
+
 export class ScheduleStop {
   readonly id: string
   readonly kind: ScheduleStopKind
@@ -13,6 +26,8 @@ export class ScheduleStop {
   readonly journalSnippet?: string
   readonly tags: string[]
   readonly position?: GeoPosition
+  readonly timing: ScheduleStopTiming
+  readonly cityInfo: ScheduleStopCityInfo
 
   constructor(
     id: string,
@@ -25,6 +40,8 @@ export class ScheduleStop {
     journalSnippet?: string,
     tags: string[] = [],
     position?: GeoPosition,
+    timing: ScheduleStopTiming = {},
+    cityInfo: ScheduleStopCityInfo = {},
   ) {
     this.id = id
     this.kind = kind
@@ -36,5 +53,7 @@ export class ScheduleStop {
     this.journalSnippet = journalSnippet
     this.tags = tags
     this.position = position
+    this.timing = timing
+    this.cityInfo = cityInfo
   }
 }

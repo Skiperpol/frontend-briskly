@@ -29,8 +29,13 @@ export const WAITING_TIME_PRESETS = [
 
 export function filterAndSortConnections(
   options: PlannerConnectionOption[],
+  minimumArrival?: { date: string; time: string },
 ): PlannerConnectionOption[] {
-  return [...options].sort(
+  const filtered = minimumArrival
+    ? filterConnectionsAfterSchedule(options, minimumArrival)
+    : options
+
+  return [...filtered].sort(
     (left, right) =>
       left.connection.duration_waiting - right.connection.duration_waiting,
   )
@@ -58,6 +63,47 @@ export function formatDurationSeconds(totalSeconds: number): string {
   }
   if (hours > 0) return `${hours} godz. ${minutes} min`
   return `${minutes} min`
+}
+
+export function parseScheduleDateTime(date: string, time: string): number | null {
+  const normalizedTime = time.length === 5 ? `${time}:00` : time
+  const parsed = new Date(`${date}T${normalizedTime}`)
+  if (Number.isNaN(parsed.getTime())) return null
+  return parsed.getTime()
+}
+
+export function isScheduleBefore(
+  candidate: { date: string; time: string },
+  reference: { date: string; time: string },
+): boolean {
+  const candidateMs = parseScheduleDateTime(candidate.date, candidate.time)
+  const referenceMs = parseScheduleDateTime(reference.date, reference.time)
+  if (candidateMs === null || referenceMs === null) return false
+  return candidateMs < referenceMs
+}
+
+export function clampScheduleToMinimum(
+  candidate: { date: string; time: string },
+  minimum: { date: string; time: string },
+): { date: string; time: string } {
+  if (!isScheduleBefore(candidate, minimum)) return candidate
+  return { date: minimum.date, time: minimum.time.slice(0, 5) }
+}
+
+export function filterConnectionsAfterSchedule(
+  options: PlannerConnectionOption[],
+  minimum: { date: string; time: string },
+): PlannerConnectionOption[] {
+  return options.filter(
+    (option) =>
+      !isScheduleBefore(
+        {
+          date: option.connection.arrival_date,
+          time: option.connection.arrival_time.slice(0, 5),
+        },
+        minimum,
+      ),
+  )
 }
 
 export function formatSchedule(date: string, time: string): string {

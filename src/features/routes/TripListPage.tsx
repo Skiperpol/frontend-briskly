@@ -63,7 +63,7 @@ export function TripListPage() {
     const completed: UserTrip[] = []
 
     for (const trip of filteredTrips) {
-      if (trip.isFinalized) {
+      if (trip.isCompleted) {
         completed.push(trip)
       } else {
         inProgress.push(trip)
@@ -193,7 +193,7 @@ function TripBadges({ trip }: { trip: UserTrip }) {
 
   return (
     <>
-      <TripStatusBadge finalized={trip.isFinalized} />
+      <TripStatusBadge completed={trip.isCompleted} />
       <Badge variant="secondary" className="gap-1 text-[10px]">
         <BookOpen className="size-3" />
         {formatEntryCount(entryCount)}
@@ -226,10 +226,10 @@ function TripGridCard({
         aria-label={trip.name}
       />
       <CardContent className="flex min-h-0 flex-1 flex-col p-2.5">
-        <div className="space-y-0.5">
+        <div className="min-h-0 flex-1 space-y-0.5 overflow-hidden">
           <p className="truncate text-xs text-muted-foreground">{trip.location}</p>
           <h3 className="line-clamp-2 text-sm font-semibold leading-snug">{trip.name}</h3>
-          <p className="text-xs leading-snug text-muted-foreground">
+          <p className="line-clamp-1 text-xs leading-snug text-muted-foreground">
             {formatTripDescriptionPreview(trip.description)}
           </p>
         </div>
@@ -296,7 +296,7 @@ function TripListRow({
         <h3 className="truncate font-semibold">{trip.name}</h3>
         <p className="truncate text-sm text-muted-foreground">{trip.location}</p>
         <div className="mt-1.5 flex flex-wrap items-center gap-2">
-          <TripStatusBadge finalized={trip.isFinalized} />
+          <TripStatusBadge completed={trip.isCompleted} />
           <Badge variant="secondary" className="text-[10px]">
             {formatEntryCount(entryCount)}
           </Badge>
@@ -337,17 +337,17 @@ function TripListRow({
   )
 }
 
-function TripStatusBadge({ finalized }: { finalized: boolean }) {
+function TripStatusBadge({ completed }: { completed: boolean }) {
   return (
     <Badge
       className={cn(
         "border-transparent text-[10px]",
-        finalized
+        completed
           ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
           : "bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300",
       )}
     >
-      {finalized ? "Zakończona" : "W trakcie"}
+      {completed ? "Zakończona" : "W trakcie"}
     </Badge>
   )
 }

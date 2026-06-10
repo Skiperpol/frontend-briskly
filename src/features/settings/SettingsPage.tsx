@@ -33,7 +33,7 @@ export function SettingsPage() {
   }
 
   const { user } = session
-  const completedTrips = journalTrips.filter((trip) => trip.isFinalized).length
+  const completedTrips = journalTrips.filter((trip) => trip.isCompleted).length
 
   return (
     <PageLayout title="Ustawienia">

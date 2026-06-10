@@ -17,6 +17,7 @@ import type {
   ApiUser,
 } from "@/shared/api/types"
 import { decodeNoteHtml } from "@/features/journal/journalNoteCodec"
+import { computeStayDays } from "@/features/routes/scheduleStopFormatters"
 
 const DEFAULT_THUMBNAIL =
   "https://images.unsplash.com/photo-1511739001486-6bfe10ce785f?w=400&q=80"
@@ -42,6 +43,53 @@ function formatTime(time: string): string {
   return time.slice(0, 5)
 }
 
+function stopRefCityInfo(stop: ApiStopRef) {
+  const paragraphs =
+    stop.description_paragraphs?.filter(Boolean) ??
+    (stop.city_description
+      ? stop.city_description.split("\n").map((part) => part.trim()).filter(Boolean)
+      : [])
+
+  return {
+    descriptionParagraphs: paragraphs.length > 0 ? paragraphs : undefined,
+    population: stop.city_population ?? undefined,
+  }
+}
+
+function buildScheduleStopFromRef(
+  stop: ApiStopRef,
+  options: {
+    primaryTime: string
+    arrivalDate?: string
+    arrivalTime?: string
+    departureDate?: string
+    departureTime?: string
+  },
+): ScheduleStop {
+  const timing = {
+    arrivalDate: options.arrivalDate,
+    arrivalTime: options.arrivalTime ? formatTime(options.arrivalTime) : undefined,
+    departureDate: options.departureDate,
+    departureTime: options.departureTime ? formatTime(options.departureTime) : undefined,
+    stayDays: computeStayDays(options.arrivalDate, options.departureDate),
+  }
+
+  return new ScheduleStop(
+    `stop-${stop.stop_id}`,
+    "bus",
+    options.primaryTime,
+    stop.stop_name,
+    stop.city_name ?? stop.region ?? "",
+    {},
+    stop.thumbnail_url ?? undefined,
+    undefined,
+    stop.country_name ? [stop.country_name] : [],
+    stopRefToPosition(stop),
+    timing,
+    stopRefCityInfo(stop),
+  )
+}
+
 export function connectionsToScheduleStops(connections: ApiConnection[]): ScheduleStop[] {
   if (connections.length === 0) return []
 
@@ -49,35 +97,26 @@ export function connectionsToScheduleStops(connections: ApiConnection[]): Schedu
   const first = connections[0]!
 
   stops.push(
-    new ScheduleStop(
-      `stop-${first.starting_stop.stop_id}`,
-      "bus",
-      formatTime(first.departure_time),
-      first.starting_stop.stop_name,
-      `${first.starting_stop.city_name}`,
-      {},
-      undefined,
-      undefined,
-      [],
-      stopRefToPosition(first.starting_stop),
-    ),
+    buildScheduleStopFromRef(first.starting_stop, {
+      primaryTime: formatTime(first.departure_time),
+      departureDate: first.departure_date,
+      departureTime: first.departure_time,
+    }),
   )
 
-  for (const connection of connections) {
+  for (let index = 0; index < connections.length; index += 1) {
+    const connection = connections[index]!
+    const next = connections[index + 1]
     const dest = connection.destination_stop
+
     stops.push(
-      new ScheduleStop(
-        `stop-${dest.stop_id}`,
-        "bus",
-        formatTime(connection.arrival_time),
-        dest.stop_name,
-        `${dest.city_name}`,
-        { Data: connection.arrival_date },
-        dest.thumbnail_url ?? undefined,
-        undefined,
-        [],
-        stopRefToPosition(dest),
-      ),
+      buildScheduleStopFromRef(dest, {
+        primaryTime: formatTime(connection.arrival_time),
+        arrivalDate: connection.arrival_date,
+        arrivalTime: connection.arrival_time,
+        departureDate: next?.departure_date,
+        departureTime: next?.departure_time,
+      }),
     )
   }
 
@@ -191,11 +230,11 @@ function stopRefToPlannerLeg(
 ): PlannerRouteLeg {
   return {
     id: legId,
-    cityId: stop.city_id,
-    cityLabel: stop.city_name,
+    cityId: stop.city_id ?? "",
+    cityLabel: stop.city_name ?? stop.region ?? "",
     stopId: stop.stop_id,
     stopName: stop.stop_name,
-    address: stop.region ?? stop.city_name,
+    address: stop.region ?? stop.city_name ?? "",
     position: stopRefToPosition(stop),
     date,
     time: formatTime(time),
