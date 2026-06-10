@@ -13,7 +13,6 @@ type PlannerConnectionsListProps = {
   items: PlannerConnectionOption[]
   loading?: boolean
   error?: string | null
-  destinationCityLabel?: string | null
   onSelect: (option: PlannerConnectionOption) => void
   onHover: (option: PlannerConnectionOption | null) => void
 }
@@ -22,7 +21,6 @@ export function PlannerConnectionsList({
   items,
   loading = false,
   error = null,
-  destinationCityLabel = null,
   onSelect,
   onHover,
 }: PlannerConnectionsListProps) {
@@ -44,9 +42,8 @@ export function PlannerConnectionsList({
   if (items.length === 0) {
     return (
       <p className="rounded-lg border border-dashed border-border px-3 py-4 text-sm text-muted-foreground">
-        {destinationCityLabel
-          ? `Brak kursów do ${destinationCityLabel} w podanym czasie oczekiwania. Spróbuj wydłużyć czas, zmienić godzinę gotowości lub wybrać inne miasto.`
-          : "Brak połączeń w podanym czasie oczekiwania. Spróbuj wydłużyć czas lub zmienić godzinę gotowości."}
+        Brak połączeń w podanym czasie oczekiwania. Spróbuj wydłużyć czas lub zmienić godzinę
+        gotowości.
       </p>
     )
   }
@@ -59,9 +56,7 @@ export function PlannerConnectionsList({
           Dostępne połączenia ({items.length})
         </p>
         <p className="mt-1 text-xs text-muted-foreground">
-          {destinationCityLabel
-            ? `Najbliższe odjazdy do ${destinationCityLabel} — wybierz kurs, aby dodać przystanek.`
-            : "Posortowane od najszybszego odjazdu — wybierz kurs, aby dodać przystanek."}
+          Posortowane od najszybszego odjazdu — wybierz kurs, aby dodać przystanek.
         </p>
       </div>
       <ul className="space-y-2">

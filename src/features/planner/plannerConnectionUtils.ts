@@ -29,13 +29,8 @@ export const WAITING_TIME_PRESETS = [
 
 export function filterAndSortConnections(
   options: PlannerConnectionOption[],
-  destinationCityId?: string | null,
 ): PlannerConnectionOption[] {
-  const filtered = destinationCityId
-    ? options.filter((option) => option.cityId === destinationCityId)
-    : options
-
-  return [...filtered].sort(
+  return [...options].sort(
     (left, right) =>
       left.connection.duration_waiting - right.connection.duration_waiting,
   )

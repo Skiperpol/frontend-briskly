@@ -87,11 +87,6 @@ export function PlannerEditorPage() {
   const [connectionOptions, setConnectionOptions] = useState<PlannerConnectionOption[]>([])
   const [connectionsLoading, setConnectionsLoading] = useState(false)
   const [connectionsError, setConnectionsError] = useState<string | null>(null)
-  const [destinationCityQuery, setDestinationCityQuery] = useState("")
-  const [searchedDestinationCityResults, setSearchedDestinationCityResults] = useState<
-    PlannerCity[]
-  >([])
-  const [selectedDestinationCity, setSelectedDestinationCity] = useState<PlannerCity | null>(null)
 
   useEffect(() => {
     legsInitializedFor.current = null
@@ -109,11 +104,6 @@ export function PlannerEditorPage() {
     return searchedCityResults
   }, [cityQuery, popularCitiesQuery.data, searchedCityResults])
 
-  const destinationCityResults = useMemo(() => {
-    if (destinationCityQuery.trim().length < 2) return popularCitiesQuery.data ?? []
-    return searchedDestinationCityResults
-  }, [destinationCityQuery, popularCitiesQuery.data, searchedDestinationCityResults])
-
   useEffect(() => {
     const trimmed = cityQuery.trim()
     if (trimmed.length < 2) return
@@ -130,23 +120,6 @@ export function PlannerEditorPage() {
       window.clearTimeout(timer)
     }
   }, [cityQuery])
-
-  useEffect(() => {
-    const trimmed = destinationCityQuery.trim()
-    if (trimmed.length < 2) return
-
-    let cancelled = false
-    const timer = window.setTimeout(() => {
-      void fetchPlannerCities(trimmed).then((cities) => {
-        if (!cancelled) setSearchedDestinationCityResults(cities)
-      })
-    }, 300)
-
-    return () => {
-      cancelled = true
-      window.clearTimeout(timer)
-    }
-  }, [destinationCityQuery])
 
   useEffect(() => {
     if (!selectedCity) return
@@ -218,8 +191,8 @@ export function PlannerEditorPage() {
 
   const visibleConnectionOptions = useMemo(() => {
     if (!canSearchConnections) return []
-    return filterAndSortConnections(connectionOptions, selectedDestinationCity?.id ?? null)
-  }, [canSearchConnections, connectionOptions, selectedDestinationCity?.id])
+    return filterAndSortConnections(connectionOptions)
+  }, [canSearchConnections, connectionOptions])
 
   const persistLegs = useCallback(
     (legs: PlannerRouteLeg[]) => {
@@ -285,8 +258,6 @@ export function PlannerEditorPage() {
       setHoveredStopId(null)
       setZoomStopId(null)
       setSelectedStopId(null)
-      setDestinationCityQuery("")
-      setSelectedDestinationCity(null)
       void persistLegs(nextLegs)
     },
     [persistLegs, readyDate, readyTime, routeLegs, waitingMinutes],
@@ -673,70 +644,6 @@ export function PlannerEditorPage() {
 
                     <div className="space-y-2">
                       <Label
-                        htmlFor="planner-destination-city"
-                        className="text-[10px] uppercase tracking-wider"
-                      >
-                        Miasto docelowe (opcjonalnie)
-                      </Label>
-                      <Input
-                        id="planner-destination-city"
-                        value={destinationCityQuery}
-                        placeholder="Filtruj połączenia do wybranego miasta"
-                        onChange={(event) => {
-                          setDestinationCityQuery(event.target.value)
-                          setSelectedDestinationCity(null)
-                        }}
-                      />
-                      {destinationCityResults.length > 0 && !selectedDestinationCity && (
-                        <ul className="max-h-40 overflow-y-auto rounded-md border border-border">
-                          {destinationCityQuery.trim().length < 2 && (
-                            <li className="px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                              Popularne miasta
-                            </li>
-                          )}
-                          {destinationCityResults.map((city) => (
-                            <li key={city.id}>
-                              <button
-                                type="button"
-                                className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
-                                onClick={() => {
-                                  setSelectedDestinationCity(city)
-                                  setDestinationCityQuery(city.label)
-                                  setSearchedDestinationCityResults([])
-                                }}
-                              >
-                                {city.label}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                      {selectedDestinationCity ? (
-                        <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                          <span>
-                            Cel: <span className="font-medium text-foreground">{selectedDestinationCity.label}</span>
-                          </span>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="xs"
-                            onClick={() => {
-                              setSelectedDestinationCity(null)
-                              setDestinationCityQuery("")
-                            }}
-                          >
-                            Wyczyść
-                          </Button>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-muted-foreground">
-                          Bez wyboru miasta zobaczysz wszystkie dostępne kierunki.
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label
                         htmlFor="planner-waiting"
                         className="text-[10px] uppercase tracking-wider"
                       >
@@ -764,7 +671,6 @@ export function PlannerEditorPage() {
                       items={visibleConnectionOptions}
                       loading={canSearchConnections && connectionsLoading}
                       error={canSearchConnections ? connectionsError : null}
-                      destinationCityLabel={selectedDestinationCity?.label ?? null}
                       onSelect={handleSelectConnection}
                       onHover={(option) => setHoveredStopId(option?.stopId ?? null)}
                     />
@@ -777,12 +683,8 @@ export function PlannerEditorPage() {
 
         <div className="relative min-h-[min(50vh,420px)] min-w-0 flex-1 lg:min-h-0">
           <PlannerMap
-            cityCenter={
-              isFirstLeg
-                ? selectedCity?.mapCenter
-                : (selectedDestinationCity?.mapCenter ?? lastLeg?.position)
-            }
-            cityZoom={selectedDestinationCity?.mapZoom ?? selectedCity?.mapZoom}
+            cityCenter={isFirstLeg ? selectedCity?.mapCenter : lastLeg?.position}
+            cityZoom={selectedCity?.mapZoom}
             departureDate={isFirstLeg ? departureDate : readyDate}
             departureTime={isFirstLeg ? departureTime : readyTime}
             routeLegs={routeLegs}
