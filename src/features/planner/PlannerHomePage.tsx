@@ -141,9 +141,9 @@ export function PlannerHomePage() {
                       style={{ backgroundImage: `url(${trip.heroImageUrl})` }}
                     />
                     <CardContent className="space-y-2 py-4">
-                      <div className="flex items-start justify-between gap-2 pr-8">
+                      <div className="flex items-start gap-1.5 pr-8">
                         <p className="line-clamp-2 font-semibold leading-tight">{trip.name}</p>
-                        <Compass className="size-4 shrink-0 text-primary" aria-hidden />
+                        <Compass className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />
                       </div>
                       <p className="line-clamp-2 text-xs text-muted-foreground">
                         {trip.description}
