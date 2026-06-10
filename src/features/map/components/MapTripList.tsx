@@ -1,7 +1,12 @@
-import { ScrollArea } from "@/shared/components/ui/scroll-area"
-import { cn } from "@/shared/lib/utils"
+import { BookOpen, CalendarDays } from "lucide-react"
+import { Link } from "react-router-dom"
+
 import type { UserTrip } from "@/domain/models/UserTrip"
 import type { TripMapLayer } from "@/features/map/tripMapUtils"
+import { tripJournalPath, tripSchedulePath } from "@/features/routes/tripPaths"
+import { Button } from "@/shared/components/ui/button"
+import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import { cn } from "@/shared/lib/utils"
 
 type MapTripListProps = {
   layers: TripMapLayer[]
@@ -38,12 +43,9 @@ export function MapTripList({
 
             return (
               <li key={layer.tripId}>
-                <button
-                  type="button"
-                  onClick={() => onSelectTrip(layer.tripId)}
+                <div
                   className={cn(
-                    "w-full rounded-lg border bg-card p-3 text-left transition-colors",
-                    "hover:bg-muted/40",
+                    "overflow-hidden rounded-lg border bg-card transition-colors",
                     isSelected && "bg-muted/50 shadow-sm",
                   )}
                   style={
@@ -52,25 +54,52 @@ export function MapTripList({
                       : undefined
                   }
                 >
-                  <div className="flex items-start gap-3">
-                    <span
-                      className="mt-1 size-3 shrink-0 rounded-full"
-                      style={{ backgroundColor: layer.color }}
-                      aria-hidden
-                    />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold">{layer.name}</p>
-                      {trip?.location && (
-                        <p className="mt-0.5 truncate text-xs text-muted-foreground">
-                          {trip.location}
+                  <button
+                    type="button"
+                    onClick={() => onSelectTrip(layer.tripId)}
+                    className="w-full p-3 text-left transition-colors hover:bg-muted/40"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span
+                        className="mt-1 size-3 shrink-0 rounded-full"
+                        style={{ backgroundColor: layer.color }}
+                        aria-hidden
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-semibold">{layer.name}</p>
+                        {trip?.location && (
+                          <p className="mt-0.5 truncate text-xs text-muted-foreground">
+                            {trip.location}
+                          </p>
+                        )}
+                        <p className="mt-1 text-[10px] text-muted-foreground">
+                          {layer.stops.length} przystanków
                         </p>
-                      )}
-                      <p className="mt-1 text-[10px] text-muted-foreground">
-                        {layer.stops.length} przystanków
-                      </p>
+                      </div>
                     </div>
-                  </div>
-                </button>
+                  </button>
+                  {isSelected && (
+                    <div className="flex gap-1.5 border-t border-border/60 px-3 py-2">
+                      <Button type="button" size="sm" className="h-7 flex-1 gap-1 px-2" asChild>
+                        <Link to={tripSchedulePath(layer.tripId)}>
+                          <CalendarDays className="size-3.5 shrink-0" aria-hidden />
+                          Harmonogram
+                        </Link>
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-7 flex-1 gap-1 border-transparent bg-sky-400 px-2 text-white hover:bg-sky-500 dark:bg-sky-500 dark:hover:bg-sky-400"
+                        asChild
+                      >
+                        <Link to={tripJournalPath(layer.tripId)}>
+                          <BookOpen className="size-3.5 shrink-0" aria-hidden />
+                          Dziennik
+                        </Link>
+                      </Button>
+                    </div>
+                  )}
+                </div>
               </li>
             )
           })}

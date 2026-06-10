@@ -10,6 +10,7 @@ import { MapStyleSwitcher } from "@/features/map/components/MapStyleSwitcher"
 import { MapTripList } from "@/features/map/components/MapTripList"
 import { DEFAULT_MAP_STYLE_ID, type MapStyleId } from "@/features/map/mapStyles"
 import { collectStopPositions } from "@/features/map/tripMapUtils"
+import { TripDetailViewNav } from "@/features/routes/components/TripDetailViewNav"
 import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { TripNameSearch } from "@/shared/components/TripNameSearch"
 import { useBusRouteLayers } from "@/shared/hooks/useBusRouteLayers"
@@ -84,8 +85,16 @@ export function GlobalMapPage() {
     return computeTotalKilometers(connections)
   }, [filteredTripIds, tripBundles])
 
+  const selectedTrip = activeTripId
+    ? filteredTrips.find((trip) => trip.id === activeTripId)
+    : undefined
+
   return (
-    <PageLayout title="Mapa tras Flixbus">
+    <PageLayout
+      title={selectedTrip?.name ?? "Mapa tras Flixbus"}
+      subtitle={selectedTrip ? "Podgląd na mapie" : undefined}
+      trailing={activeTripId ? <TripDetailViewNav tripId={activeTripId} /> : undefined}
+    >
       <div className="flex min-h-0 flex-1">
         <div className="relative min-h-0 min-w-0 flex-1">
           <GlobalMap
