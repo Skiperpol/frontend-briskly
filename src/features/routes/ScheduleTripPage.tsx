@@ -5,6 +5,7 @@ import { ArrowLeft, Bus } from "lucide-react"
 import type { ScheduleStop, UserTrip } from "@/domain/models"
 import { useTrip } from "@/shared/hooks/useTrip"
 import { ScheduleTripMap } from "@/features/routes/components/ScheduleTripMap"
+import { TripDetailViewNav } from "@/features/routes/components/TripDetailViewNav"
 import { Badge } from "@/shared/components/ui/badge"
 import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
@@ -29,19 +30,22 @@ export function ScheduleTripPage() {
     )
   }
 
-  if (!trip) {
+  if (!trip || !tripId) {
     return <Navigate to="/trasy" replace />
   }
 
   return (
     <PageLayout
       action={
-        <Button size="sm" className="gap-2" asChild>
-          <Link to="/trasy">
-            <ArrowLeft className="size-4" />
-            Wszystkie trasy
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" className="gap-2" asChild>
+            <Link to="/trasy">
+              <ArrowLeft className="size-4" />
+              <span className="hidden sm:inline">Wszystkie trasy</span>
+            </Link>
+          </Button>
+          <TripDetailViewNav tripId={tripId} activeView="schedule" />
+        </div>
       }
     >
       <div className="flex min-h-0 flex-1 flex-col lg:flex-row">

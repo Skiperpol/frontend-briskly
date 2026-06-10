@@ -9,6 +9,7 @@ import { EditableBlock } from "@/features/journal/components/EditableBlock"
 import { NewNoteForm } from "@/features/journal/components/NewNoteForm"
 import { StopSelector } from "@/features/journal/components/StopSelector"
 import { exportJournalTripPdf, notesForStop } from "@/features/journal/journalUtils"
+import { TripDetailViewNav } from "@/features/routes/components/TripDetailViewNav"
 import type { EditableNote } from "@/features/journal/types"
 import { Button } from "@/shared/components/ui/button"
 import {
@@ -201,23 +202,30 @@ export function JournalDetailPage() {
   return (
     <PageLayout
       action={
-        <Button size="sm" className="gap-2" asChild>
-          <Link to="/trasy">
-            <ArrowLeft className="size-4" />
-            Wszystkie trasy
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" className="gap-2" asChild>
+            <Link to="/trasy">
+              <ArrowLeft className="size-4" />
+              <span className="hidden sm:inline">Wszystkie trasy</span>
+            </Link>
+          </Button>
+          <TripDetailViewNav tripId={tripId} activeView="journal" />
+        </div>
       }
       trailing={
         <Button
+          type="button"
           size="sm"
           variant="outline"
           className="gap-2"
           disabled={exportingPdf}
+          aria-label={exportingPdf ? "Generowanie PDF…" : "Eksportuj PDF"}
           onClick={handleExportPdf}
         >
           <Download className="size-4" aria-hidden />
-          {exportingPdf ? "Generowanie PDF…" : "Eksportuj PDF"}
+          <span className="hidden sm:inline">
+            {exportingPdf ? "Generowanie PDF…" : "Eksportuj PDF"}
+          </span>
         </Button>
       }
     >
