@@ -52,12 +52,18 @@ export function EditableBlock({
   return (
     <div className={cn("group relative", className)}>
       {children}
-      <div className="absolute inset-y-4 right-4 flex w-36 flex-col justify-center gap-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+      <div
+        className={cn(
+          "mt-3 flex flex-wrap gap-2",
+          "sm:absolute sm:inset-y-4 sm:right-4 sm:mt-0 sm:w-36 sm:flex-col sm:justify-center",
+          "sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-within:opacity-100",
+        )}
+      >
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="w-full justify-center gap-1.5"
+          className="sm:w-full sm:justify-center sm:gap-1.5"
           onClick={() => setEditing(true)}
         >
           <Pencil className="size-3.5 shrink-0" />
@@ -68,7 +74,7 @@ export function EditableBlock({
             type="button"
             variant="outline"
             size="sm"
-            className="w-full justify-center gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+            className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-full sm:justify-center"
             onClick={onDelete}
           >
             <Trash2 className="size-3.5 shrink-0" />

@@ -34,7 +34,7 @@ export function ScheduleTripMap({ trip, focusedStopId }: ScheduleTripMapProps) {
   const focusKey = focusedStopId ?? `route-${trip.id}`
 
   return (
-    <div className="relative h-full min-h-[280px] w-full">
+    <div className="relative h-full min-h-0 w-full lg:min-h-[280px]">
       <GlobalMap
         layers={routeLayers}
         focusPositions={focusPositions}

@@ -79,8 +79,13 @@ export function MapTripList({
                     </div>
                   </button>
                   {isSelected && (
-                    <div className="flex gap-1.5 border-t border-border/60 px-3 py-2">
-                      <Button type="button" size="sm" className="h-7 flex-1 gap-1 px-2" asChild>
+                    <div className="grid grid-cols-2 gap-1.5 border-t border-border/60 px-3 py-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="h-auto min-h-7 flex-col gap-0.5 px-1 py-1.5 text-[10px] sm:h-7 sm:flex-row sm:gap-1 sm:px-2 sm:text-xs"
+                        asChild
+                      >
                         <Link to={tripSchedulePath(layer.tripId)}>
                           <CalendarDays className="size-3.5 shrink-0" aria-hidden />
                           Harmonogram
@@ -89,7 +94,7 @@ export function MapTripList({
                       <Button
                         type="button"
                         size="sm"
-                        className="h-7 flex-1 gap-1 border-transparent bg-sky-400 px-2 text-white hover:bg-sky-500 dark:bg-sky-500 dark:hover:bg-sky-400"
+                        className="h-auto min-h-7 flex-col gap-0.5 border-transparent bg-sky-400 px-1 py-1.5 text-[10px] text-white hover:bg-sky-500 sm:h-7 sm:flex-row sm:gap-1 sm:px-2 sm:text-xs dark:bg-sky-500 dark:hover:bg-sky-400"
                         asChild
                       >
                         <Link to={tripJournalPath(layer.tripId)}>

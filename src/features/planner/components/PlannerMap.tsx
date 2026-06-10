@@ -160,7 +160,7 @@ export function PlannerMap({
   const showZoomPending = Boolean(zoomStopId && !zoomPathReady && zoomPreviewStatus === "loading")
 
   return (
-    <div className="relative h-full min-h-[280px] w-full">
+    <div className="relative h-full min-h-0 w-full lg:min-h-[280px]">
       <GlobalMap
         layers={layers}
         focusPositions={focusPositions}

@@ -78,7 +78,7 @@ export function PlannerHomePage() {
       subtitle="Wybierz podróż do dokończenia lub zaplanuj nową trasę Flixbus"
     >
       <ScrollArea className="flex-1">
-        <div className="grid gap-4 p-6 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 p-4 sm:grid-cols-2 sm:p-6 xl:grid-cols-3">
           {error && (
             <p className="col-span-full rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
               {error}
@@ -124,7 +124,7 @@ export function PlannerHomePage() {
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="absolute right-2 top-2 z-10 size-8 bg-background/80 opacity-0 shadow-sm backdrop-blur transition-opacity group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
+                    className="absolute right-2 top-2 z-10 size-8 bg-background/80 opacity-100 shadow-sm backdrop-blur transition-opacity sm:opacity-0 sm:group-hover:opacity-100 hover:bg-destructive/10 hover:text-destructive"
                     disabled={deleteTripMutation.isPending}
                     aria-label={`Usuń podróż ${trip.name}`}
                     onClick={() => setTripToDelete({ id: trip.id, name: trip.name })}

@@ -6,6 +6,7 @@ import {
   Map,
   Plus,
   Settings,
+  X,
 } from "lucide-react"
 
 import { useAuth } from "@/shared/context/AuthContext"
@@ -24,16 +25,43 @@ const navItems = [
   { to: "/map", label: "Mapa tras", icon: Globe2, end: true },
 ] as const
 
-export function AppSidebar() {
+type AppSidebarProps = {
+  variant: "desktop" | "mobile"
+  onNavigate?: () => void
+}
+
+export function AppSidebar({ variant, onNavigate }: AppSidebarProps) {
   const { session, logout } = useAuth()
+  const isMobile = variant === "mobile"
 
   return (
-    <aside className="flex h-full w-56 shrink-0 flex-col border-r border-border bg-sidebar px-3 py-5">
-      <div className="mb-8 px-2">
-        <p className="text-lg font-bold tracking-tight text-foreground">Briskly</p>
-        <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-        Planuj, podróżuj, <br />wspominaj
-        </p>
+    <aside
+      className={cn(
+        "flex h-full w-56 shrink-0 flex-col border-r border-border bg-sidebar px-3 py-5",
+        isMobile
+          ? "fixed inset-y-0 left-0 z-50 shadow-xl lg:hidden"
+          : "hidden lg:flex",
+      )}
+    >
+      <div className="mb-8 flex items-start justify-between px-2">
+        <div>
+          <p className="text-lg font-bold tracking-tight text-foreground">Briskly</p>
+          <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+            Planuj, podróżuj, <br />
+            wspominaj
+          </p>
+        </div>
+        {isMobile && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Zamknij menu"
+            onClick={onNavigate}
+          >
+            <X className="size-4" />
+          </Button>
+        )}
       </div>
 
       <nav className="flex flex-1 flex-col gap-0.5">
@@ -42,6 +70,7 @@ export function AppSidebar() {
             key={to}
             to={to}
             end={end}
+            onClick={onNavigate}
             className={({ isActive }) =>
               cn(
                 "relative flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
@@ -69,7 +98,7 @@ export function AppSidebar() {
 
       <div className="mt-4 space-y-3">
         <Button className="w-full gap-2" asChild>
-          <Link to="/planner">
+          <Link to="/planner" onClick={onNavigate}>
             <Plus className="size-4" />
             Nowa wycieczka
           </Link>
@@ -113,7 +142,7 @@ export function AppSidebar() {
                 className="h-9 w-full justify-start gap-2 px-2.5 text-sm font-normal"
                 asChild
               >
-                <Link to="/settings">
+                <Link to="/settings" onClick={onNavigate}>
                   <Settings className="size-4" />
                   Ustawienia
                 </Link>
@@ -122,7 +151,10 @@ export function AppSidebar() {
                 type="button"
                 variant="ghost"
                 className="h-9 w-full justify-start gap-2 px-2.5 text-sm font-normal text-destructive hover:bg-destructive/10 hover:text-destructive"
-                onClick={() => logout()}
+                onClick={() => {
+                  onNavigate?.()
+                  logout()
+                }}
               >
                 <LogOut className="size-4" />
                 Wyloguj

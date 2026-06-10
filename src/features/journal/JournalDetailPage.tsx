@@ -202,42 +202,72 @@ export function JournalDetailPage() {
   return (
     <PageLayout
       action={
-        <div className="flex items-center gap-2">
+        <div className="hidden items-center gap-2 sm:flex">
           <Button size="sm" className="gap-2" asChild>
             <Link to="/trasy">
               <ArrowLeft className="size-4" />
-              <span className="hidden sm:inline">Wszystkie trasy</span>
+              Wszystkie trasy
             </Link>
           </Button>
           <TripDetailViewNav tripId={tripId} activeView="journal" />
         </div>
       }
       trailing={
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          className="gap-2"
-          disabled={exportingPdf}
-          aria-label={exportingPdf ? "Generowanie PDF…" : "Eksportuj PDF"}
-          onClick={handleExportPdf}
-        >
-          <Download className="size-4" aria-hidden />
-          <span className="hidden sm:inline">
+        <>
+          <div className="grid w-full grid-cols-4 gap-2 sm:hidden">
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-auto min-h-9 w-full flex-col gap-0.5 px-1 py-1.5 text-[10px] leading-tight"
+              asChild
+            >
+              <Link to="/trasy">
+                <ArrowLeft className="size-4 shrink-0" aria-hidden />
+                Cofnij
+              </Link>
+            </Button>
+            <TripDetailViewNav
+              tripId={tripId}
+              activeView="journal"
+              className="col-span-2"
+            />
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-auto min-h-9 w-full flex-col gap-0.5 px-1 py-1.5 text-[10px] leading-tight"
+              disabled={exportingPdf}
+              aria-label={exportingPdf ? "Generowanie PDF…" : "Eksportuj PDF"}
+              onClick={handleExportPdf}
+            >
+              <Download className="size-4 shrink-0" aria-hidden />
+              {exportingPdf ? "…" : "PDF"}
+            </Button>
+          </div>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="hidden gap-2 sm:inline-flex"
+            disabled={exportingPdf}
+            aria-label={exportingPdf ? "Generowanie PDF…" : "Eksportuj PDF"}
+            onClick={handleExportPdf}
+          >
+            <Download className="size-4" aria-hidden />
             {exportingPdf ? "Generowanie PDF…" : "Eksportuj PDF"}
-          </span>
-        </Button>
+          </Button>
+        </>
       }
     >
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {mutationError && (
-          <p className="shrink-0 border-b border-destructive/20 bg-destructive/10 px-6 py-2 text-sm text-destructive">
+          <p className="shrink-0 border-b border-destructive/20 bg-destructive/10 px-4 py-2 text-sm text-destructive sm:px-6">
             {mutationError}
           </p>
         )}
 
         <EditableBlock
-          className="shrink-0 border-b border-border px-6 py-5"
+          className="shrink-0 border-b border-border px-4 py-4 sm:px-6 sm:py-5"
           editContent={
             <Form {...headerForm}>
               <form className="space-y-3" onSubmit={saveHeader}>
@@ -281,8 +311,8 @@ export function JournalDetailPage() {
             })
           }}
         >
-          <div className="pr-28">
-            <h2 className="text-2xl font-bold">{trip.name}</h2>
+          <div className="sm:pr-28">
+            <h2 className="text-xl font-bold sm:text-2xl">{trip.name}</h2>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{trip.description}</p>
             <p className="mt-2 text-sm text-muted-foreground">
               {formatTripDate(trip.startDate)}
@@ -290,7 +320,7 @@ export function JournalDetailPage() {
           </div>
         </EditableBlock>
 
-        <div className="grid min-h-0 flex-1 gap-6 p-6 lg:grid-cols-3">
+        <div className="grid min-h-0 flex-1 gap-4 p-4 sm:gap-6 sm:p-6 lg:grid-cols-3">
           <aside className="min-h-0 lg:col-span-1">
             <ScrollArea className="h-full max-h-full">
               {trip.scheduleStops.length > 0 ? (

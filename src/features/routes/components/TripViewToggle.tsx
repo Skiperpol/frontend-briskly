@@ -14,7 +14,7 @@ export function TripViewToggle({ view, onViewChange, className }: TripViewToggle
   return (
     <div
       className={cn(
-        "flex gap-0.5 rounded-lg border border-border bg-background p-0.5",
+        "flex w-full gap-0.5 rounded-lg border border-border bg-background p-0.5 sm:w-auto",
         className,
       )}
       role="group"
@@ -24,7 +24,7 @@ export function TripViewToggle({ view, onViewChange, className }: TripViewToggle
         type="button"
         size="sm"
         variant={view === "grid" ? "default" : "ghost"}
-        className="h-8 gap-1.5 px-2.5"
+        className="h-8 flex-1 gap-1.5 px-2.5 sm:flex-none"
         onClick={() => onViewChange("grid")}
         aria-pressed={view === "grid"}
       >
@@ -35,7 +35,7 @@ export function TripViewToggle({ view, onViewChange, className }: TripViewToggle
         type="button"
         size="sm"
         variant={view === "list" ? "default" : "ghost"}
-        className="h-8 gap-1.5 px-2.5"
+        className="h-8 flex-1 gap-1.5 px-2.5 sm:flex-none"
         onClick={() => onViewChange("list")}
         aria-pressed={view === "list"}
       >

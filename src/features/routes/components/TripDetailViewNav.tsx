@@ -18,10 +18,13 @@ export function TripDetailViewNav({ tripId, activeView, className }: TripDetailV
   const isSchedule = activeView === "schedule"
   const isJournal = activeView === "journal"
 
+  const navButtonClassName =
+    "h-auto min-h-9 flex-1 flex-col gap-0.5 px-1 py-1.5 text-[10px] leading-tight sm:h-8 sm:flex-none sm:flex-row sm:gap-1.5 sm:px-2.5 sm:text-sm"
+
   return (
     <div
       className={cn(
-        "flex gap-0.5 rounded-lg border border-border bg-background p-0.5",
+        "flex w-full gap-0.5 rounded-lg border border-border bg-background p-0.5 sm:w-auto",
         className,
       )}
       role="group"
@@ -31,7 +34,7 @@ export function TripDetailViewNav({ tripId, activeView, className }: TripDetailV
         type="button"
         size="sm"
         variant={isSchedule ? "default" : "ghost"}
-        className="h-8 gap-1.5 px-2.5"
+        className={navButtonClassName}
         asChild
       >
         <Link
@@ -40,6 +43,7 @@ export function TripDetailViewNav({ tripId, activeView, className }: TripDetailV
           aria-label="Harmonogram"
         >
           <CalendarDays className="size-4 shrink-0" aria-hidden />
+          <span className="sm:hidden">Harmon.</span>
           <span className="hidden sm:inline">Harmonogram</span>
         </Link>
       </Button>
@@ -47,7 +51,7 @@ export function TripDetailViewNav({ tripId, activeView, className }: TripDetailV
         type="button"
         size="sm"
         variant={isJournal ? "default" : "ghost"}
-        className="h-8 gap-1.5 px-2.5"
+        className={navButtonClassName}
         asChild
       >
         <Link
@@ -56,7 +60,7 @@ export function TripDetailViewNav({ tripId, activeView, className }: TripDetailV
           aria-label="Dziennik"
         >
           <BookOpen className="size-4 shrink-0" aria-hidden />
-          <span className="hidden sm:inline">Dziennik</span>
+          Dziennik
         </Link>
       </Button>
     </div>

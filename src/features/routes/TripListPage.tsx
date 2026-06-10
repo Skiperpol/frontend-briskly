@@ -89,9 +89,8 @@ export function TripListPage() {
   return (
     <PageLayout
       title="Trasy"
-      subtitle="Twoje podróże — przejdź do dziennika lub harmonogramu"
       trailing={
-        <div className="flex flex-wrap items-center justify-end gap-3">
+        <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:justify-end">
           <TripNameSearch
             id="routes-trip-search"
             value={searchQuery}
@@ -103,7 +102,7 @@ export function TripListPage() {
       }
     >
       <ScrollArea className="flex-1">
-        <div className="space-y-10 p-6">
+        <div className="space-y-10 p-4 sm:p-6">
           {loading && (
             <p className="text-center text-sm text-muted-foreground">Ładowanie podróży…</p>
           )}
@@ -293,52 +292,62 @@ function TripListRow({
   const entryCount = trip.journalEntryCount
 
   return (
-    <div className="flex items-center gap-4 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:bg-muted/40">
-      <div
-        className="size-14 shrink-0 rounded-md bg-cover bg-center"
-        style={{ backgroundImage: `url(${trip.heroImageUrl})` }}
-        role="img"
-        aria-label={trip.name}
-      />
-      <div className="min-w-0 flex-1">
-        <h3 className="truncate font-semibold">{trip.name}</h3>
-        <p className="truncate text-sm text-muted-foreground">{trip.location}</p>
-        <div className="mt-1.5 flex flex-wrap items-center gap-2">
-          <TripStatusBadge completed={trip.isCompleted} />
-          <Badge variant="secondary" className="text-[10px]">
-            {formatEntryCount(entryCount)}
-          </Badge>
-          <span className="text-xs text-muted-foreground">
-            {formatTripDate(trip.startDate)}
-          </span>
+    <div className="flex flex-col gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors hover:bg-muted/40 sm:flex-row sm:items-center sm:gap-4">
+      <div className="flex min-w-0 flex-1 items-center gap-4">
+        <div
+          className="size-14 shrink-0 rounded-md bg-cover bg-center"
+          style={{ backgroundImage: `url(${trip.heroImageUrl})` }}
+          role="img"
+          aria-label={trip.name}
+        />
+        <div className="min-w-0 flex-1">
+          <h3 className="truncate font-semibold">{trip.name}</h3>
+          <p className="truncate text-sm text-muted-foreground">{trip.location}</p>
+          <div className="mt-1.5 flex flex-wrap items-center gap-2">
+            <TripStatusBadge completed={trip.isCompleted} />
+            <Badge variant="secondary" className="text-[10px]">
+              {formatEntryCount(entryCount)}
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              {formatTripDate(trip.startDate)}
+            </span>
+          </div>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <Button type="button" className="h-10 gap-1.5 px-3" asChild>
+      <div className="grid grid-cols-3 gap-2 sm:flex sm:shrink-0 sm:items-center sm:gap-2">
+        <Button
+          type="button"
+          className="h-auto min-h-10 flex-col gap-0.5 px-1 py-1.5 sm:h-10 sm:flex-row sm:gap-1.5 sm:px-3"
+          asChild
+        >
           <Link to={tripSchedulePath(trip.id)}>
-            <CalendarDays className="size-4" />
-            Harmonogram
+            <CalendarDays className="size-3.5 shrink-0 sm:size-4" />
+            <span className="text-center text-[10px] leading-tight sm:text-sm">
+              Harmonogram
+            </span>
           </Link>
         </Button>
         <Button
           type="button"
-          className="h-10 gap-1.5 border-transparent bg-sky-400 px-3 text-white hover:bg-sky-500 dark:bg-sky-500 dark:hover:bg-sky-400"
+          className="h-auto min-h-10 flex-col gap-0.5 border-transparent bg-sky-400 px-1 py-1.5 text-white hover:bg-sky-500 sm:h-10 sm:flex-row sm:gap-1.5 sm:px-3 dark:bg-sky-500 dark:hover:bg-sky-400"
           asChild
         >
           <Link to={tripJournalPath(trip.id)}>
-            <BookOpen className="size-4" />
-            Dziennik
+            <BookOpen className="size-3.5 shrink-0 sm:size-4" />
+            <span className="text-center text-[10px] leading-tight sm:text-sm">Dziennik</span>
           </Link>
         </Button>
         <Button
           type="button"
           variant="outline"
-          className="h-10 gap-1.5 px-3"
+          className="h-auto min-h-10 flex-col gap-0.5 px-1 py-1.5 sm:h-10 sm:flex-row sm:gap-1.5 sm:px-3"
           disabled={exporting}
           onClick={onExport}
         >
-          <Download className="size-4" />
-          {exporting ? "PDF…" : "Eksportuj"}
+          <Download className="size-3.5 shrink-0 sm:size-4" />
+          <span className="text-center text-[10px] leading-tight sm:text-sm">
+            {exporting ? "PDF…" : "Eksportuj"}
+          </span>
         </Button>
       </div>
     </div>

@@ -190,7 +190,7 @@ function NoteCard({
           onCancel={() => setDraft(note)}
           onDelete={onDelete}
         >
-          <div className="space-y-3 py-4 pl-6 pr-44">
+          <div className="space-y-3 py-4 pl-6 sm:pr-44">
             <div>
               <p className="text-[10px] text-muted-foreground">
                 {formatNoteDay(note.day)}

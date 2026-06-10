@@ -413,7 +413,7 @@ export function PlannerEditorPage() {
       title={trip.name}
       subtitle="Buduj trasę krok po kroku — dodawaj przystanki Flixbus"
       action={
-        <div className="flex items-center gap-2">
+        <div className="hidden items-center gap-2 sm:flex">
           <Button size="sm" variant="outline" className="gap-2" asChild>
             <Link to="/planner">
               <ArrowLeft className="size-4" aria-hidden />
@@ -433,25 +433,79 @@ export function PlannerEditorPage() {
         </div>
       }
       trailing={
-        <Button
-          size="sm"
-          className="gap-2"
-          disabled={!canFinalize}
-          title={
-            canFinalize
-              ? undefined
-              : `Dodaj co najmniej ${MIN_STOPS_TO_FINALIZE} przystanki, aby zatwierdzić trasę`
-          }
-          onClick={() => setConfirmOpen(true)}
-        >
-          <Check className="size-4" aria-hidden />
-          Zatwierdź trasę
-        </Button>
+        <>
+          <div className="grid w-full grid-cols-3 gap-2 sm:hidden">
+            <Button size="sm" variant="outline" className="w-full justify-center gap-1.5 px-2" asChild>
+              <Link to="/planner">
+                <ArrowLeft className="size-4 shrink-0" aria-hidden />
+                Cofnij
+              </Link>
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full justify-center gap-1.5 px-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              disabled={deleteTripMutation.isPending}
+              onClick={() => setDeleteConfirmOpen(true)}
+            >
+              <Trash2 className="size-4 shrink-0" aria-hidden />
+              Usuń
+            </Button>
+            <Button
+              size="sm"
+              className="w-full justify-center gap-1.5 px-2"
+              disabled={!canFinalize}
+              title={
+                canFinalize
+                  ? undefined
+                  : `Dodaj co najmniej ${MIN_STOPS_TO_FINALIZE} przystanki, aby zatwierdzić trasę`
+              }
+              onClick={() => setConfirmOpen(true)}
+            >
+              <Check className="size-4 shrink-0" aria-hidden />
+              Zatwierdź
+            </Button>
+          </div>
+          <Button
+            size="sm"
+            className="hidden gap-2 sm:inline-flex"
+            disabled={!canFinalize}
+            title={
+              canFinalize
+                ? undefined
+                : `Dodaj co najmniej ${MIN_STOPS_TO_FINALIZE} przystanki, aby zatwierdzić trasę`
+            }
+            onClick={() => setConfirmOpen(true)}
+          >
+            <Check className="size-4" aria-hidden />
+            Zatwierdź trasę
+          </Button>
+        </>
       }
     >
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <ScrollArea className="w-full shrink-0 lg:max-w-md lg:border-r lg:border-border xl:max-w-lg">
-          <div className="space-y-6 p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
+        <div className="shrink-0 px-4 pt-3 lg:order-2 lg:min-h-0 lg:flex-1 lg:px-0 lg:pt-0">
+          <div className="relative h-[min(30vh,260px)] overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm lg:h-full lg:rounded-none lg:border-0 lg:bg-transparent lg:shadow-none">
+            <PlannerMap
+              cityCenter={isFirstLeg ? selectedCity?.mapCenter : lastLeg?.position}
+              cityZoom={selectedCity?.mapZoom}
+              departureDate={isFirstLeg ? departureDate : readyDate}
+              departureTime={isFirstLeg ? departureTime : readyTime}
+              routeLegs={routeLegs}
+              pickerStops={isFirstLeg ? activePickerStops : []}
+              recommendedStops={isFirstLeg ? [] : connectionStops}
+              stopById={stopById}
+              selectedStopId={effectiveSelectedStopId}
+              hoveredStopId={hoveredStopId}
+              zoomStopId={zoomStopId}
+              onStopSelect={handleStopSelectFromMap}
+              onStopHover={setHoveredStopId}
+            />
+          </div>
+        </div>
+
+        <ScrollArea className="mt-3 w-full rounded-t-2xl border-t border-border bg-background shadow-[0_-4px_12px_rgba(0,0,0,0.04)] lg:order-1 lg:mt-0 lg:max-w-md lg:min-h-0 lg:shrink-0 lg:rounded-none lg:border-r lg:border-t-0 lg:shadow-none xl:max-w-lg">
+          <div className="space-y-6 p-4 sm:p-6">
             {saveError && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
                 {saveError}
@@ -535,7 +589,7 @@ export function PlannerEditorPage() {
                       )}
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
                       <div className="space-y-2">
                         <Label
                           htmlFor="planner-date"
@@ -630,7 +684,7 @@ export function PlannerEditorPage() {
                       />
                     )}
 
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
                       <div className="space-y-2">
                         <Label
                           htmlFor="planner-ready-date"
@@ -746,24 +800,6 @@ export function PlannerEditorPage() {
             </Card>
           </div>
         </ScrollArea>
-
-        <div className="relative min-h-[min(50vh,420px)] min-w-0 flex-1 lg:min-h-0">
-          <PlannerMap
-            cityCenter={isFirstLeg ? selectedCity?.mapCenter : lastLeg?.position}
-            cityZoom={selectedCity?.mapZoom}
-            departureDate={isFirstLeg ? departureDate : readyDate}
-            departureTime={isFirstLeg ? departureTime : readyTime}
-            routeLegs={routeLegs}
-            pickerStops={isFirstLeg ? activePickerStops : []}
-            recommendedStops={isFirstLeg ? [] : connectionStops}
-            stopById={stopById}
-            selectedStopId={effectiveSelectedStopId}
-            hoveredStopId={hoveredStopId}
-            zoomStopId={zoomStopId}
-            onStopSelect={handleStopSelectFromMap}
-            onStopHover={setHoveredStopId}
-          />
-        </div>
       </div>
 
       <ConfirmDialog

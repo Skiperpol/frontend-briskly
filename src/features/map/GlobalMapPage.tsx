@@ -95,8 +95,8 @@ export function GlobalMapPage() {
       subtitle={selectedTrip ? "Podgląd na mapie" : undefined}
       trailing={activeTripId ? <TripDetailViewNav tripId={activeTripId} /> : undefined}
     >
-      <div className="flex min-h-0 flex-1">
-        <div className="relative min-h-0 min-w-0 flex-1">
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
+        <div className="relative min-h-[min(45vh,360px)] min-w-0 flex-1 lg:min-h-0">
           <GlobalMap
             layers={filteredLayers}
             focusPositions={focusPositions}
@@ -125,7 +125,7 @@ export function GlobalMapPage() {
             </div>
           </div>
         </div>
-        <aside className="flex w-80 shrink-0 flex-col border-l border-sidebar-border bg-sidebar p-4">
+        <aside className="flex max-h-[45vh] w-full shrink-0 flex-col border-t border-sidebar-border bg-sidebar p-4 lg:max-h-none lg:w-80 lg:border-t-0 lg:border-l">
           {loading && (
             <p className="mb-3 text-xs text-muted-foreground">Ładowanie podróży…</p>
           )}

@@ -35,20 +35,40 @@ export function ScheduleTripPage() {
   return (
     <PageLayout
       action={
-        <div className="flex items-center gap-2">
+        <div className="hidden items-center gap-2 sm:flex">
           <Button size="sm" className="gap-2" asChild>
             <Link to="/trasy">
               <ArrowLeft className="size-4" />
-              <span className="hidden sm:inline">Wszystkie trasy</span>
+              Wszystkie trasy
             </Link>
           </Button>
           <TripDetailViewNav tripId={tripId} activeView="schedule" />
         </div>
       }
+      trailing={
+        <div className="grid w-full grid-cols-3 gap-2 sm:hidden">
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-auto min-h-9 w-full flex-col gap-0.5 px-1 py-1.5 text-[10px] leading-tight"
+            asChild
+          >
+            <Link to="/trasy">
+              <ArrowLeft className="size-4 shrink-0" aria-hidden />
+              Cofnij
+            </Link>
+          </Button>
+          <TripDetailViewNav
+            tripId={tripId}
+            activeView="schedule"
+            className="col-span-2"
+          />
+        </div>
+      }
     >
-      <div className="flex min-h-0 flex-1 flex-col lg:flex-row">
-        <ScrollArea className="w-full shrink-0 lg:max-w-xl lg:border-r lg:border-border">
-          <div className="p-6">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto lg:flex-row lg:overflow-hidden">
+        <ScrollArea className="order-2 mt-3 w-full rounded-t-2xl border-t border-border bg-background shadow-[0_-4px_12px_rgba(0,0,0,0.04)] lg:order-1 lg:mt-0 lg:max-w-xl lg:min-h-0 lg:shrink-0 lg:rounded-none lg:border-r lg:border-t-0 lg:shadow-none">
+          <div className="p-4 sm:p-6">
             <ScheduleHeaderCard
               trip={trip}
               selected={focusedStopId === null}
@@ -73,8 +93,10 @@ export function ScheduleTripPage() {
             </div>
           </div>
         </ScrollArea>
-        <div className="relative min-h-[min(50vh,420px)] min-w-0 flex-1 lg:min-h-0">
-          <ScheduleTripMap trip={trip} focusedStopId={focusedStopId} />
+        <div className="order-1 shrink-0 px-4 pt-3 lg:order-2 lg:min-h-0 lg:flex-1 lg:px-0 lg:pt-0">
+          <div className="relative h-[min(30vh,260px)] overflow-hidden rounded-xl border border-border bg-muted/30 shadow-sm lg:h-full lg:rounded-none lg:border-0 lg:bg-transparent lg:shadow-none">
+            <ScheduleTripMap trip={trip} focusedStopId={focusedStopId} />
+          </div>
         </div>
       </div>
     </PageLayout>
