@@ -18,6 +18,21 @@ export function isGoogleOAuthEnabled(): boolean {
   return getGoogleClientId() !== null
 }
 
+/** Origin przekazywany do Google Identity — musi być w Authorized JavaScript origins. */
+export function getGoogleOAuthJavascriptOrigin(): string {
+  return window.location.origin
+}
+
+export function getGoogleOAuthOriginMismatchHelp(): string {
+  const origin = getGoogleOAuthJavascriptOrigin()
+  return (
+    `Logowanie Google nie działa dla tej domeny (${origin}). ` +
+    `W Google Cloud Console → APIs & Services → Credentials → klient OAuth (typ: Web application) ` +
+    `dodaj ten adres w „Authorized JavaScript origins”. ` +
+    `Uwaga: http://localhost:5173 i http://127.0.0.1:5173 to różne origins — dodaj ten, którego używasz w przeglądarce.`
+  )
+}
+
 export function isGithubOAuthEnabled(): boolean {
   return getGithubClientId() !== null
 }

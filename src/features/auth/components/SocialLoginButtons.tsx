@@ -1,12 +1,13 @@
-import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google"
 import { Loader2 } from "lucide-react"
 import { useState } from "react"
 
+import { GoogleSignInButton } from "@/features/auth/components/GoogleSignInButton"
 import { AuthError } from "@/domain/services"
 import { useAuth } from "@/shared/context/AuthContext"
 import { Button } from "@/shared/components/ui/button"
 import {
   getGoogleClientId,
+  getGoogleOAuthJavascriptOrigin,
   isGithubOAuthEnabled,
   isGoogleOAuthEnabled,
   startGithubOAuth,
@@ -62,34 +63,25 @@ export function SocialLoginButtons({
   return (
     <div className="space-y-3">
       {googleEnabled && (
-        <GoogleOAuthProvider clientId={getGoogleClientId()!}>
-          <div className="relative flex justify-center">
-            {loading === "google" && (
-              <div className="absolute inset-0 z-10 flex items-center justify-center rounded-md bg-background/80">
-                <Loader2 className="size-4 animate-spin text-muted-foreground" />
-              </div>
-            )}
-            <div className="w-full [&>div]:!w-full [&_iframe]:!w-full">
-              <GoogleLogin
-                text="continue_with"
-                theme="outline"
-                size="large"
-                shape="rectangular"
-                width="400"
-                onSuccess={(response) => {
-                  if (!response.credential) {
-                    onError?.("Google nie zwróciło tokenu logowania.")
-                    return
-                  }
-                  void handleGoogleCredential(response.credential)
-                }}
-                onError={() => {
-                  onError?.("Logowanie przez Google zostało przerwane.")
-                }}
-              />
-            </div>
-          </div>
-        </GoogleOAuthProvider>
+        <>
+          <GoogleSignInButton
+            clientId={getGoogleClientId()!}
+            loading={loading === "google"}
+            disabled={loading !== null}
+            onCredential={(idToken) => void handleGoogleCredential(idToken)}
+            onError={(message) => onError?.(message)}
+          />
+          {import.meta.env.DEV && (
+            <p className="text-center text-[11px] leading-relaxed text-muted-foreground">
+              Google OAuth origin:{" "}
+              <code className="rounded bg-muted px-1 py-0.5">
+                {getGoogleOAuthJavascriptOrigin()}
+              </code>
+              . Przy błędzie <strong>origin_mismatch</strong> dodaj ten adres w Google Cloud
+              Console.
+            </p>
+          )}
+        </>
       )}
 
       {githubEnabled && (
