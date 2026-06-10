@@ -214,8 +214,10 @@ function TripGridCard({
   exporting: boolean
   onExport: () => void
 }) {
+  const descriptionPreview = formatTripDescriptionPreview(trip.description)
+
   return (
-    <Card className="relative flex h-64 w-full flex-col gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
+    <Card className="relative flex min-h-64 w-full flex-col gap-0 overflow-hidden py-0 transition-shadow hover:shadow-md">
       <div className="absolute top-2.5 right-2.5 z-10 flex max-w-[calc(100%-1.25rem)] flex-wrap justify-end gap-1">
         <TripBadges trip={trip} />
       </div>
@@ -225,47 +227,53 @@ function TripGridCard({
         role="img"
         aria-label={trip.name}
       />
-      <CardContent className="flex min-h-0 flex-1 flex-col p-2.5">
-        <div className="min-h-0 flex-1 space-y-0.5 overflow-hidden">
+      <CardContent className="flex flex-1 flex-col p-2.5">
+        <div className="space-y-0.5">
           <p className="truncate text-xs text-muted-foreground">{trip.location}</p>
-          <h3 className="line-clamp-2 text-sm font-semibold leading-snug">{trip.name}</h3>
-          <p className="line-clamp-1 text-xs leading-snug text-muted-foreground">
-            {formatTripDescriptionPreview(trip.description)}
-          </p>
+          <h3 className="line-clamp-3 break-words text-sm font-semibold leading-snug">
+            {trip.name}
+          </h3>
+          {descriptionPreview && (
+            <p className="line-clamp-1 text-xs leading-snug text-muted-foreground">
+              {descriptionPreview}
+            </p>
+          )}
         </div>
-        <div className="mt-auto grid w-full shrink-0 grid-cols-3 gap-1.5 pt-1.5">
+        <div className="mt-3 grid w-full shrink-0 grid-cols-3 gap-1.5">
           <Button
             type="button"
             size="sm"
-            className="h-8 w-full justify-center gap-1 px-1.5"
+            className="h-auto min-h-11 w-full flex-col gap-0.5 px-1 py-1.5"
             asChild
           >
             <Link to={tripSchedulePath(trip.id)}>
               <CalendarDays className="size-3.5 shrink-0" />
-              <span className="truncate">Harmonogram</span>
+              <span className="text-center text-[10px] leading-tight">Harmonogram</span>
             </Link>
           </Button>
           <Button
             type="button"
             size="sm"
-            className="h-8 w-full justify-center gap-1 border-transparent bg-sky-400 px-1.5 text-white hover:bg-sky-500 dark:bg-sky-500 dark:hover:bg-sky-400"
+            className="h-auto min-h-11 w-full flex-col gap-0.5 border-transparent bg-sky-400 px-1 py-1.5 text-white hover:bg-sky-500 dark:bg-sky-500 dark:hover:bg-sky-400"
             asChild
           >
             <Link to={tripJournalPath(trip.id)}>
               <BookOpen className="size-3.5 shrink-0" />
-              <span className="truncate">Dziennik</span>
+              <span className="text-center text-[10px] leading-tight">Dziennik</span>
             </Link>
           </Button>
           <Button
             type="button"
             size="sm"
             variant="outline"
-            className="h-8 w-full justify-center gap-1 px-1.5"
+            className="h-auto min-h-11 w-full flex-col gap-0.5 px-1 py-1.5"
             disabled={exporting}
             onClick={onExport}
           >
             <Download className="size-3.5 shrink-0" />
-            <span className="truncate">{exporting ? "PDF…" : "Eksportuj"}</span>
+            <span className="text-center text-[10px] leading-tight">
+              {exporting ? "PDF…" : "Eksportuj"}
+            </span>
           </Button>
         </div>
       </CardContent>

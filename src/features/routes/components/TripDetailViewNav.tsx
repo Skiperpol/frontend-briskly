@@ -47,13 +47,7 @@ export function TripDetailViewNav({ tripId, activeView, className }: TripDetailV
         type="button"
         size="sm"
         variant={isJournal ? "default" : "ghost"}
-        className={cn(
-          "h-8 gap-1.5 px-2.5",
-          isJournal &&
-            "border-transparent bg-sky-400 text-white hover:bg-sky-500 dark:bg-sky-500 dark:hover:bg-sky-400",
-          !isJournal &&
-            "hover:bg-sky-50 hover:text-sky-700 dark:hover:bg-sky-950 dark:hover:text-sky-300",
-        )}
+        className="h-8 gap-1.5 px-2.5"
         asChild
       >
         <Link
