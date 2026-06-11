@@ -2,25 +2,21 @@ import type { Map as MapboxMap } from "mapbox-gl"
 
 import type { LatLngTuple } from "@/domain/models/GeoPosition"
 
-/** [[west, south], [east, north]] */
 export type MapboxBounds = [[number, number], [number, number]]
 
 const MIN_LAT_SPAN = 0.35
 const MIN_LNG_SPAN = 0.35
 
-/** Maksymalny obszar mapy tras — tylko Europa. */
 export const EUROPE_MAX_BOUNDS: MapboxBounds = [
   [-25, 34],
   [45, 72],
 ]
 
-/** Domyślny kadr przy widoku wszystkich tras. */
 export const EUROPE_VIEW_BOUNDS: MapboxBounds = [
   [-18, 36],
   [38, 66],
 ]
 
-/** Stały widok Europy — ten sam co initialViewState mapy (bez skoku fitBounds). */
 export const EUROPE_DEFAULT_VIEW = {
   center: [15, 52] as [number, number],
   zoom: 3.8,

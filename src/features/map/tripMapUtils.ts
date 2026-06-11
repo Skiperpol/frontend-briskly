@@ -14,10 +14,8 @@ export type TripMapLayer = {
   tripId: string
   name: string
   color: string
-  /** Wypełniane przez Mapbox Directions (drogi). */
   path: GeoPosition[]
   stops: TripMapStop[]
-  /** Przerywana linia (np. podgląd przed zatwierdzeniem). */
   dashed?: boolean
 }
 
@@ -62,7 +60,6 @@ export function collectAllPositions(layers: TripMapLayer[]): GeoPosition[] {
   ])
 }
 
-/** Pozycje przystanków — stabilne podczas ładowania geometrii trasy (kamera mapy). */
 export function collectStopPositions(layers: TripMapLayer[]): GeoPosition[] {
   return layers.flatMap((layer) => layer.stops.map((stop) => stop.position))
 }

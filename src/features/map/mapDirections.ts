@@ -11,10 +11,6 @@ type DirectionsResponse = {
   }[]
 }
 
-/**
- * Trasa po drogach (Mapbox Directions — profil driving, jak autobus Flixbus).
- * Współrzędne: stacja A → stacja B (opcjonalnie przystanki po drodze).
- */
 export async function fetchRoadRoute(
   stations: GeoPosition[],
   accessToken: string,
