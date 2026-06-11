@@ -28,7 +28,6 @@ export type TripDetailBundle = {
   connections: ApiConnection[]
   notesByConnection: Map<number, ApiNote[]>
   editableNotes: EditableNote[]
-  /** Lightweight list payload — notes load on demand in trip detail. */
   isSummary?: boolean
 }
 
