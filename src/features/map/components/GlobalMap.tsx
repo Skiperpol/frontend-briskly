@@ -24,9 +24,7 @@ import type { TripMapLayer } from "@/features/map/tripMapUtils"
 
 import "mapbox-gl/dist/mapbox-gl.css"
 
-/** Bez ruchu kamery (np. podczas filtrowania wyszukiwarką). */
 export const MAP_CAMERA_IDLE = "idle"
-/** Widok całej Europy — start i po odznaczeniu trasy. */
 export const MAP_CAMERA_OVERVIEW = "overview"
 
 const EUROPE_INITIAL_VIEW = {
@@ -42,16 +40,12 @@ type GlobalMapProps = {
   focusPositions: LatLngTuple[]
   focusKey: string
   mapStyleId: MapStyleId
-  /** Przy jednym punkcie w focusPositions — flyTo zamiast fitBounds. */
   pointFocusZoom?: number
-  /** Kliknięcie w marker przystanku (wymaga stopId w GeoJSON). */
   selectedStopId?: string | null
   hoveredStopId?: string | null
   onStopSelect?: (stopId: string) => void
   onStopHover?: (stopId: string | null) => void
-  /** Jeśli podane — tylko te markery reagują na klik/hover (np. bez punktów trasy). */
   selectableStopIds?: string[]
-  /** Podświetlona trasa; pozostałe są przyciemniane (70% przezroczystości). */
   highlightedTripId?: string | null
 }
 

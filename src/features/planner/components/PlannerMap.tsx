@@ -27,7 +27,6 @@ type PlannerMapProps = {
   stopById: Map<string, PlannerDepartureStop>
   selectedStopId: string | null
   hoveredStopId: string | null
-  /** Ustawiane tylko z selecta — steruje przybliżeniem mapy. */
   zoomStopId: string | null
   onStopSelect: (stopId: string) => void
   onStopHover: (stopId: string | null) => void

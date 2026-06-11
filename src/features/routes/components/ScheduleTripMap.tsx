@@ -9,7 +9,6 @@ import { useBusRouteLayers } from "@/shared/hooks/useBusRouteLayers"
 
 type ScheduleTripMapProps = {
   trip: UserTrip
-  /** `null` — cała trasa; inaczej id przystanku harmonogramu. */
   focusedStopId: string | null
 }
 

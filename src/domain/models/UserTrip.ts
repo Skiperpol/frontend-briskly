@@ -55,7 +55,6 @@ export class UserTrip {
     return this.finalizedAt !== null
   }
 
-  /** True when the planned trip's end date is before today. */
   get isCompleted(): boolean {
     if (!this.finalizedAt) return false
 

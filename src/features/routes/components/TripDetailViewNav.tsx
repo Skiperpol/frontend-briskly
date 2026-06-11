@@ -9,7 +9,6 @@ export type TripDetailView = "schedule" | "journal"
 
 type TripDetailViewNavProps = {
   tripId: string
-  /** Brak wartości — żaden widok nie jest podświetlony (np. mapa globalna). */
   activeView?: TripDetailView
   className?: string
 }

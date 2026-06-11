@@ -1,4 +1,3 @@
-/** Zgodne z backendem: apps/trips/services/stats.py */
 export function computeTotalKilometers(
   connections: ReadonlyArray<{ duration_in_travel: number }>,
 ): string {

@@ -4,7 +4,6 @@ import type { ApiStopDestinationConnection } from "@/shared/api/types"
 export type PlannerCity = {
   id: string
   label: string
-  /** Środek mapy po wyborze miasta (przed wyborem przystanku). */
   mapCenter: GeoPosition
   mapZoom: number
 }
