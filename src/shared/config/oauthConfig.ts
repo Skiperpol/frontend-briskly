@@ -18,7 +18,6 @@ export function isGoogleOAuthEnabled(): boolean {
   return getGoogleClientId() !== null
 }
 
-/** Origin przekazywany do Google Identity — musi być w Authorized JavaScript origins. */
 export function getGoogleOAuthJavascriptOrigin(): string {
   return window.location.origin
 }
