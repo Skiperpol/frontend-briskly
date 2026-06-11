@@ -50,20 +50,24 @@ export function EditableBlock({
   }
 
   return (
-    <div className={cn("group relative", className)}>
-      {children}
+    <div
+      className={cn(
+        "group flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between",
+        className,
+      )}
+    >
+      <div className="min-w-0 flex-1">{children}</div>
       <div
         className={cn(
-          "mt-3 flex flex-wrap gap-2",
-          "sm:absolute sm:inset-y-4 sm:right-4 sm:mt-0 sm:w-36 sm:flex-col sm:justify-center",
-          "sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-within:opacity-100",
+          "flex shrink-0 flex-wrap gap-2",
+          "sm:flex-col sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100 sm:group-focus-within:opacity-100",
         )}
       >
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="sm:w-full sm:justify-center sm:gap-1.5"
+          className="gap-1.5"
           onClick={() => setEditing(true)}
         >
           <Pencil className="size-3.5 shrink-0" />
@@ -74,11 +78,12 @@ export function EditableBlock({
             type="button"
             variant="outline"
             size="sm"
-            className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive sm:w-full sm:justify-center"
+            className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
             onClick={onDelete}
           >
             <Trash2 className="size-3.5 shrink-0" />
-            Usuń notatkę
+            <span className="sm:hidden">Usuń</span>
+            <span className="hidden sm:inline">Usuń notatkę</span>
           </Button>
         )}
       </div>

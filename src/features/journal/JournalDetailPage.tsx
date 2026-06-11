@@ -9,6 +9,7 @@ import { EditableBlock } from "@/features/journal/components/EditableBlock"
 import { NewNoteForm } from "@/features/journal/components/NewNoteForm"
 import { StopSelector } from "@/features/journal/components/StopSelector"
 import { exportJournalTripPdf, notesForStop } from "@/features/journal/journalUtils"
+import { stopIdToConnectionId } from "@/shared/api/connectionUtils"
 import { TripDetailViewNav } from "@/features/routes/components/TripDetailViewNav"
 import type { EditableNote } from "@/features/journal/types"
 import { Button } from "@/shared/components/ui/button"
@@ -52,7 +53,7 @@ function fieldInputClassName() {
 
 export function JournalDetailPage() {
   const { tripId } = useParams<{ tripId: string }>()
-  const { trip, editableNotes, loading } = useTrip(tripId)
+  const { trip, editableNotes, connections, loading } = useTrip(tripId)
   const [selectedStopId, setSelectedStopId] = useState("")
   const [mutationError, setMutationError] = useState<string | null>(null)
   const [exportingPdf, setExportingPdf] = useState(false)
@@ -97,6 +98,9 @@ export function JournalDetailPage() {
   )
 
   const selectedStop = trip?.scheduleStops.find((stop) => stop.id === activeStopId)
+  const activeConnectionId = activeStopId
+    ? stopIdToConnectionId(activeStopId, connections)
+    : undefined
 
   const saving =
     updateMetadataMutation.isPending ||
@@ -149,9 +153,11 @@ export function JournalDetailPage() {
   }
 
   const reorderStopNotes = (reordered: EditableNote[]) => {
+    if (!activeConnectionId) return
+
     setMutationError(null)
     reorderNotesMutation.mutate(
-      { scheduleStopId: activeStopId, reordered },
+      { connectionId: activeConnectionId, reordered },
       {
         onError: (error) => {
           setMutationError(
@@ -165,9 +171,14 @@ export function JournalDetailPage() {
   const addNote = (
     partial: Omit<EditableNote, "id" | "sortOrder" | "scheduleStopId" | "connectionId">,
   ) => {
+    if (!activeConnectionId) {
+      setMutationError("Nie znaleziono połączenia dla wybranego przystanku.")
+      return
+    }
+
     setMutationError(null)
     addNoteMutation.mutate(
-      { scheduleStopId: activeStopId, partial },
+      { connectionId: activeConnectionId, scheduleStopId: activeStopId, partial },
       {
         onError: (error) => {
           setMutationError(error instanceof Error ? error.message : "Nie udało się dodać notatki.")
@@ -311,7 +322,7 @@ export function JournalDetailPage() {
             })
           }}
         >
-          <div className="sm:pr-28">
+          <div>
             <h2 className="text-xl font-bold sm:text-2xl">{trip.name}</h2>
             <p className="mt-1 max-w-2xl text-sm text-muted-foreground">{trip.description}</p>
             <p className="mt-2 text-sm text-muted-foreground">

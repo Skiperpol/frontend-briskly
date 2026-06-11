@@ -66,10 +66,6 @@ export class UserTrip {
     return end < today
   }
 
-  get dayLabel(): string {
-    return "Dzień 4: Londyn → Paryż"
-  }
-
   finalize(): void {
     this.finalizedAt = new Date()
   }

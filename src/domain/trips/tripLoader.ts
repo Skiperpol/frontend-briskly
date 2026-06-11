@@ -1,10 +1,11 @@
-import type { UserTrip } from "@/domain/models"
+import { UserTrip, type JournalEntry } from "@/domain/models"
 import type { EditableNote } from "@/features/journal/types"
 import { mapConnectionNotesToEditable } from "@/features/journal/journalUtils"
 import type { PlannerRouteLeg } from "@/features/planner/types"
 import { fetchDashboardStats as fetchDashboardStatsApi } from "@/shared/api/authApi"
 import {
   connectionsToPlannerLegs,
+  mapApiNoteToJournalEntry,
   mapApiStatsToDashboardStats,
   mapApiTripToUserTrip,
 } from "@/shared/api/mappers"
@@ -110,6 +111,53 @@ export async function fetchTripDetail(slug: string): Promise<TripDetailBundle | 
 export async function loadDashboardStats() {
   const stats = await fetchDashboardStatsApi()
   return mapApiStatsToDashboardStats(stats)
+}
+
+function cloneUserTrip(trip: UserTrip, journalEntries: JournalEntry[], journalEntryCount: number): UserTrip {
+  return new UserTrip(
+    trip.id,
+    trip.slug,
+    trip.name,
+    trip.heroImageUrl,
+    trip.location,
+    trip.description,
+    trip.tags,
+    trip.startDate,
+    trip.legs,
+    trip.scheduleStops,
+    journalEntries,
+    trip.finalizedAt,
+    trip.mapPath,
+    journalEntryCount,
+  )
+}
+
+export function patchConnectionNotes(
+  bundle: TripDetailBundle,
+  connectionId: number,
+  notes: ApiNote[],
+): TripDetailBundle {
+  const notesByConnection = new Map(bundle.notesByConnection)
+  notesByConnection.set(connectionId, notes)
+
+  const journalEntries = bundle.connections.flatMap((connection) => {
+    const connectionNotes = notesByConnection.get(connection.id) ?? []
+    return connectionNotes.map((note) => mapApiNoteToJournalEntry(note, connection))
+  })
+
+  const trip = cloneUserTrip(bundle.trip, journalEntries, journalEntries.length)
+  const editableNotes = bundle.connections.flatMap((connection) => {
+    const connectionNotes = notesByConnection.get(connection.id) ?? []
+    return mapConnectionNotesToEditable(connection, connectionNotes, journalEntries)
+  })
+
+  return {
+    trip,
+    connections: bundle.connections,
+    notesByConnection,
+    editableNotes,
+    isSummary: false,
+  }
 }
 
 export { clearPlannerDraftLegs, getPlannerDraftLegs, setPlannerDraftLegs }

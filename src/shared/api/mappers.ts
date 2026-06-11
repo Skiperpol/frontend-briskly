@@ -160,7 +160,7 @@ export function mapApiTripToUserTrip(
   const scheduleStops = connectionsToScheduleStops(connections)
   const journalEntries = connections.flatMap((connection) => {
     const notes = notesByConnection.get(connection.id) ?? []
-    return notes.map((note) => mapNoteToJournalEntry(note, connection))
+    return notes.map((note) => mapApiNoteToJournalEntry(note, connection))
   })
 
   const location =
@@ -186,7 +186,7 @@ export function mapApiTripToUserTrip(
   )
 }
 
-function mapNoteToJournalEntry(note: ApiNote, connection: ApiConnection): JournalEntry {
+export function mapApiNoteToJournalEntry(note: ApiNote, connection: ApiConnection): JournalEntry {
   const decoded = note.html_source ? decodeNoteHtml(note.html_source) : null
   const stopId =
     decoded?.scheduleStopId ?? `stop-${connection.destination_stop.stop_id}`

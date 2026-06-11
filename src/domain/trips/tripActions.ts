@@ -1,13 +1,12 @@
 import type { EditableNote } from "@/features/journal/types"
 import { encodeEditableNotePayload } from "@/features/journal/journalNoteCodec"
-import { notesForStop } from "@/features/journal/journalUtils"
 import type { PlannerRouteLeg } from "@/features/planner/types"
-import { stopIdToConnectionId } from "@/shared/api/connectionUtils"
 import { findDestinationsFromStop } from "@/shared/api/logisticsApi"
 import {
   mapApiTripToUserTrip,
   plannerLegsToCreateConnectionPayload,
 } from "@/shared/api/mappers"
+import type { ApiNote } from "@/shared/api/types"
 import {
   createConnection,
   createConnectionNoteHtml,
@@ -57,50 +56,44 @@ export async function updateTripMetadata(
 }
 
 export async function addJournalNote(
-  tripId: string,
+  connectionId: number,
   scheduleStopId: string,
   partial: Omit<EditableNote, "id" | "sortOrder" | "scheduleStopId" | "connectionId">,
-) {
-  const bundle = await fetchTripDetail(tripId)
-  if (!bundle) {
-    throw new Error("Nie znaleziono podróży.")
-  }
-
-  const connectionId = stopIdToConnectionId(scheduleStopId, bundle.connections)
-  if (!connectionId) {
-    throw new Error("Nie znaleziono połączenia dla wybranego przystanku.")
-  }
+): Promise<ApiNote[]> {
+  const created: ApiNote[] = []
 
   if (partial.body.trim()) {
-    await createConnectionNoteHtml(
-      connectionId,
-      encodeEditableNotePayload({
-        title: partial.title,
-        body: partial.body.trim(),
-        day: partial.day,
-        time: partial.time,
-        scheduleStopId,
-      }),
+    created.push(
+      await createConnectionNoteHtml(
+        connectionId,
+        encodeEditableNotePayload({
+          title: partial.title,
+          body: partial.body.trim(),
+          day: partial.day,
+          time: partial.time,
+          scheduleStopId,
+        }),
+      ),
     )
   }
 
-  for (const photo of partial.photos) {
-    if (photo.file) {
-      await createConnectionNoteImage(connectionId, photo.file)
-    }
+  const photoUploads = partial.photos
+    .filter((photo): photo is typeof photo & { file: File } => Boolean(photo.file))
+    .map((photo) => createConnectionNoteImage(connectionId, photo.file))
+
+  if (photoUploads.length > 0) {
+    created.push(...(await Promise.all(photoUploads)))
   }
 
-  const refreshed = await fetchTripDetail(tripId)
-  if (!refreshed) return []
-  return notesForStop(refreshed.editableNotes, scheduleStopId)
+  return created
 }
 
-export async function updateJournalNote(tripId: string, note: EditableNote) {
+export async function updateJournalNote(note: EditableNote): Promise<ApiNote> {
   if (note.isImageOnly) {
     throw new Error("Edycja zdjęć nie jest jeszcze obsługiwana.")
   }
 
-  await updateConnectionNoteHtml(
+  return updateConnectionNoteHtml(
     note.connectionId,
     Number(note.id),
     encodeEditableNotePayload({
@@ -111,28 +104,20 @@ export async function updateJournalNote(tripId: string, note: EditableNote) {
       scheduleStopId: note.scheduleStopId,
     }),
   )
-  await fetchTripDetail(tripId)
 }
 
-export async function deleteJournalNote(_tripId: string, note: EditableNote) {
+export async function deleteJournalNote(note: EditableNote): Promise<void> {
   await deleteConnectionNote(note.connectionId, Number(note.id))
 }
 
 export async function reorderJournalNotes(
-  tripId: string,
-  scheduleStopId: string,
+  connectionId: number,
   reordered: EditableNote[],
-) {
-  const bundle = await fetchTripDetail(tripId)
-  if (!bundle) return
-
-  const connectionId = stopIdToConnectionId(scheduleStopId, bundle.connections)
-  if (!connectionId) return
-
+): Promise<ApiNote[]> {
   const order = Object.fromEntries(
     reordered.map((note, index) => [String(note.id), index]),
   )
-  await reorderConnectionNotes(connectionId, order)
+  return reorderConnectionNotes(connectionId, order)
 }
 
 async function syncPlannerConnections(tripSlug: string, legs: PlannerRouteLeg[]) {

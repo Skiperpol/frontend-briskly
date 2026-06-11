@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Link, Navigate, useParams } from "react-router-dom"
 import { ArrowLeft } from "lucide-react"
 
@@ -11,12 +11,21 @@ import { Button } from "@/shared/components/ui/button"
 import { Card, CardContent } from "@/shared/components/ui/card"
 import { PageLayout } from "@/shared/components/layout/PageLayout"
 import { ScrollArea } from "@/shared/components/ui/scroll-area"
+import {
+  formatScheduleDayLabel,
+  groupScheduleStopsByDay,
+} from "@/features/routes/scheduleStopFormatters"
 import { cn } from "@/shared/lib/utils"
 
 export function ScheduleTripPage() {
   const { tripId } = useParams<{ tripId: string }>()
   const { trip, loading } = useTrip(tripId)
   const [focusedStopId, setFocusedStopId] = useState<string | null>(null)
+
+  const scheduleDays = useMemo(
+    () => (trip ? groupScheduleStopsByDay(trip.scheduleStops, trip.startDate) : []),
+    [trip],
+  )
 
   if (loading) {
     return (
@@ -74,21 +83,25 @@ export function ScheduleTripPage() {
               selected={focusedStopId === null}
               onSelect={() => setFocusedStopId(null)}
             />
-            <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              {trip.dayLabel}
-            </p>
             <div className="relative">
               <div
                 className="absolute top-3.5 bottom-3.5 left-3.5 w-px -translate-x-1/2 bg-border"
                 aria-hidden
               />
-              {trip.scheduleStops.map((stop) => (
-                <ScheduleStopCard
-                  key={stop.id}
-                  stop={stop}
-                  selected={focusedStopId === stop.id}
-                  onSelect={() => setFocusedStopId(stop.id)}
-                />
+              {scheduleDays.map((day) => (
+                <div key={day.date} className="mb-6 last:mb-0">
+                  <p className="mb-4 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    {formatScheduleDayLabel(day.dayNumber, day.stops)}
+                  </p>
+                  {day.stops.map((stop) => (
+                    <ScheduleStopCard
+                      key={stop.id}
+                      stop={stop}
+                      selected={focusedStopId === stop.id}
+                      onSelect={() => setFocusedStopId(stop.id)}
+                    />
+                  ))}
+                </div>
               ))}
             </div>
           </div>

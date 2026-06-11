@@ -11,10 +11,12 @@ import {
   updateJournalNote,
   updateTripMetadata,
 } from "@/domain/trips/tripActions"
-import type { TripDetailBundle } from "@/domain/trips/tripLoader"
+import { patchConnectionNotes, type TripDetailBundle } from "@/domain/trips/tripLoader"
+import { UserTrip } from "@/domain/models"
 import type { EditableNote } from "@/features/journal/types"
 import type { PlannerRouteLeg } from "@/features/planner/types"
 import { queryKeys } from "@/shared/api/queryKeys"
+import type { ApiNote } from "@/shared/api/types"
 
 function useInvalidateTrips() {
   const queryClient = useQueryClient()
@@ -26,6 +28,81 @@ function useInvalidateTrips() {
       void queryClient.invalidateQueries({ queryKey: queryKeys.trips.detail(tripId) })
     }
   }
+}
+
+function cloneTripWithEntryCount(trip: UserTrip, journalEntryCount: number): UserTrip {
+  return new UserTrip(
+    trip.id,
+    trip.slug,
+    trip.name,
+    trip.heroImageUrl,
+    trip.location,
+    trip.description,
+    trip.tags,
+    trip.startDate,
+    trip.legs,
+    trip.scheduleStops,
+    trip.journalEntries,
+    trip.finalizedAt,
+    trip.mapPath,
+    journalEntryCount,
+  )
+}
+
+function useJournalNoteCache(tripId: string) {
+  const queryClient = useQueryClient()
+
+  const patchNotes = (connectionId: number, notes: ApiNote[]) => {
+    queryClient.setQueryData<TripDetailBundle>(queryKeys.trips.detail(tripId), (current) => {
+      if (!current) return current
+      return patchConnectionNotes(current, connectionId, notes)
+    })
+
+    queryClient.setQueryData<TripDetailBundle[]>(queryKeys.trips.list(), (current) => {
+      if (!current) return current
+      const detail = queryClient.getQueryData<TripDetailBundle>(queryKeys.trips.detail(tripId))
+      const entryCount = detail?.trip.journalEntryCount
+      if (entryCount === undefined) return current
+
+      return current.map((bundle) =>
+        bundle.trip.id === tripId
+          ? { ...bundle, trip: cloneTripWithEntryCount(bundle.trip, entryCount) }
+          : bundle,
+      )
+    })
+  }
+
+  const appendNotes = (connectionId: number, createdNotes: ApiNote[]) => {
+    const current = queryClient.getQueryData<TripDetailBundle>(queryKeys.trips.detail(tripId))
+    if (!current) return
+
+    const existing = current.notesByConnection.get(connectionId) ?? []
+    patchNotes(connectionId, [...existing, ...createdNotes])
+  }
+
+  const removeNote = (note: EditableNote) => {
+    const current = queryClient.getQueryData<TripDetailBundle>(queryKeys.trips.detail(tripId))
+    if (!current) return
+
+    const existing = current.notesByConnection.get(note.connectionId) ?? []
+    patchNotes(
+      note.connectionId,
+      existing.filter((item) => String(item.id) !== note.id),
+    )
+  }
+
+  const replaceNote = (note: EditableNote, updatedNote: ApiNote) => {
+    const current = queryClient.getQueryData<TripDetailBundle>(queryKeys.trips.detail(tripId))
+    if (!current) return
+
+    const existing = current.notesByConnection.get(note.connectionId) ?? []
+    patchNotes(
+      note.connectionId,
+      existing.map((item) => (String(item.id) === note.id ? updatedNote : item)),
+    )
+  }
+
+  return { patchNotes, appendNotes, removeNote, replaceNote }
 }
 
 export function useDeleteTripMutation() {
@@ -91,49 +168,68 @@ export function useFinalizeTripMutation(tripId: string) {
 }
 
 export function useAddJournalNoteMutation(tripId: string) {
-  const invalidate = useInvalidateTrips()
+  const { appendNotes } = useJournalNoteCache(tripId)
 
   return useMutation({
     mutationFn: ({
+      connectionId,
       scheduleStopId,
       partial,
     }: {
+      connectionId: number
       scheduleStopId: string
       partial: Omit<EditableNote, "id" | "sortOrder" | "scheduleStopId" | "connectionId">
-    }) => addJournalNote(tripId, scheduleStopId, partial),
-    onSuccess: () => invalidate(tripId),
+    }) => addJournalNote(connectionId, scheduleStopId, partial),
+    onSuccess: (createdNotes, { connectionId }) => {
+      appendNotes(connectionId, createdNotes)
+    },
   })
 }
 
 export function useUpdateJournalNoteMutation(tripId: string) {
-  const invalidate = useInvalidateTrips()
+  const { replaceNote } = useJournalNoteCache(tripId)
 
   return useMutation({
-    mutationFn: (note: EditableNote) => updateJournalNote(tripId, note),
-    onSuccess: () => invalidate(tripId),
+    mutationFn: (note: EditableNote) => updateJournalNote(note),
+    onSuccess: (updatedNote, note) => {
+      replaceNote(note, updatedNote)
+    },
   })
 }
 
 export function useDeleteJournalNoteMutation(tripId: string) {
-  const invalidate = useInvalidateTrips()
+  const queryClient = useQueryClient()
+  const { removeNote } = useJournalNoteCache(tripId)
 
   return useMutation({
-    mutationFn: (note: EditableNote) => deleteJournalNote(tripId, note),
-    onSuccess: () => invalidate(tripId),
+    mutationFn: (note: EditableNote) => deleteJournalNote(note),
+    onMutate: async (note) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.trips.detail(tripId) })
+      const previous = queryClient.getQueryData<TripDetailBundle>(queryKeys.trips.detail(tripId))
+      removeNote(note)
+      return { previous }
+    },
+    onError: (_error, _note, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(queryKeys.trips.detail(tripId), context.previous)
+      }
+    },
   })
 }
 
 export function useReorderJournalNotesMutation(tripId: string) {
-  const invalidate = useInvalidateTrips()
+  const { patchNotes } = useJournalNoteCache(tripId)
 
   return useMutation({
     mutationFn: ({
-      scheduleStopId,
+      connectionId,
       reordered,
     }: {
-      scheduleStopId: string
+      connectionId: number
       reordered: EditableNote[]
-    }) => reorderJournalNotes(tripId, scheduleStopId, reordered),
-    onSuccess: () => invalidate(tripId),
+    }) => reorderJournalNotes(connectionId, reordered),
+    onSuccess: (notes, { connectionId }) => {
+      patchNotes(connectionId, notes)
+    },
   })
 }
